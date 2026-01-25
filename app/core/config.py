@@ -1,23 +1,35 @@
 from pydantic_settings import BaseSettings
+from typing import Optional
 
 class Settings(BaseSettings):
-    env: str = "development"
-    app_name: str = "AI Platform API"
-    app_description: str
-    app_version: str
+    PROJECT_NAME: str = "AI Platform"
+    VERSION: str = "1.0.0"
+    API_V1_STR: str = "/api/v1"
     
-    #PostgreSQL settings
-    postgres_host: str
-    postgres_db: str
-    postgres_user: str
-    postgres_password: str
-    postgres_port: int
+    # Database
+    DATABASE_URL: str = "postgresql+asyncpg://user:password@localhost:5432/ai_platform"
     
-    #MongoDB settings
-    mongo_uri: str
+    # JWT
+    SECRET_KEY: str = "your-super-secret-key-change-in-production"
+    ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    
+    # MinIO
+    MINIO_ENDPOINT: str = "localhost:9000"
+    MINIO_ACCESS_KEY: str = "minioadmin"
+    MINIO_SECRET_KEY: str = "minioadmin"
+    MINIO_BUCKET: str = "ai-platform"
+    
+    # Redis/Celery
+    REDIS_URL: str = "redis://localhost:6379"
+    
+    # Kafka
+    KAFKA_BOOTSTRAP_SERVERS: list = ["localhost:9092"]
+    
+    # RabbitMQ
+    RABBITMQ_URL: str = "amqp://guest:guest@localhost:5672/"
     
     class Config:
         env_file = ".env"
-        extra = "ignore" 
 
 settings = Settings()

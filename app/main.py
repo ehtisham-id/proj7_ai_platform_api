@@ -1,19 +1,27 @@
 from fastapi import FastAPI
-
-# from app.core.config import settings
-# from app.api.v1.health import router as health_router
-
-# app = FastAPI(
-#     title=settings.app_name,
-#     description=settings.app_description,
-#     version=settings.app_version
-# )
+from fastapi.middleware.cors import CORSMiddleware
+from app.core.config import settings
+from app.api.v1 import endpoints
 
 app = FastAPI(
-    title="My API")
+    title=settings.PROJECT_NAME,
+    version=settings.VERSION,
+    docs_url="/docs",
+    redoc_url="/redoc"
+)
 
-@app.get("/")
-async def read_root():
-    return {"message": "Welcome to My API!"}
+# CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-#app.include_router(health_router, prefix="/api/v1")
+# Health check
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy", "version": settings.VERSION}
+
+app.include_router(endpoints.router, prefix=settings.API_V1_STR)
