@@ -28,3 +28,5 @@ htmlcov
 *.jar
 *.war
 uploads
+
+.vscode
