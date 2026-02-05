@@ -28,20 +28,19 @@ services:
       - "6379:6379"
 
   kafka:
-    image: confluentinc/cp-kafka:latest
+    image: confluentinc/cp-kafka:7.5.0
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_PROCESS_ROLES: all
     ports:
       - "9092:9092"
     depends_on:
       - zookeeper
 
   zookeeper:
-    image: confluentinc/cp-zookeeper:latest
+    image: confluentinc/cp-zookeeper:7.5.0
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
@@ -68,9 +67,11 @@ services:
       - kafka
       - rabbitmq
     environment:
-      - DATABASE_URL=postgresql+asyncpg://user:password@postgres:5432/ai_platform
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/ai_platform
       - MINIO_ENDPOINT=minio:9000
-      - KAFKA_PROCESS_ROLES=all
+      - REDIS_URL=redis://redis:6379
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672//
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
     volumes:
       - ./:/app
 
@@ -80,7 +81,11 @@ services:
     volumes:
     - ./:/app
     environment:
-      - KAFKA_PROCESS_ROLES=all
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/ai_platform
+      - MINIO_ENDPOINT=minio:9000
+      - REDIS_URL=redis://redis:6379
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672//
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
     depends_on:
     - redis
     - rabbitmq

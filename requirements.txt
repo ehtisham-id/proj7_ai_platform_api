@@ -3,7 +3,7 @@ uvicorn[standard]
 sqlalchemy==2.0.46
 asyncpg==0.31.0
 alembic==1.18.1
-pydantic
+pydantic[email]
 pydantic-settings
 python-jose[cryptography]==3.5.0
 passlib[bcrypt]==1.7.4

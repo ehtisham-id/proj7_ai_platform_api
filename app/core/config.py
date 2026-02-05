@@ -1,4 +1,4 @@
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import Optional
 
 class Settings(BaseSettings):
@@ -23,13 +23,12 @@ class Settings(BaseSettings):
     # Redis/Celery
     REDIS_URL: str = "redis://localhost:6379"
     
-    # Kafka
-    KAFKA_BOOTSTRAP_SERVERS: list = ["localhost:9092"]
+    # Kafka (comma-separated string)
+    KAFKA_BOOTSTRAP_SERVERS: str = "localhost:9092"
     
     # RabbitMQ
     RABBITMQ_URL: str = "amqp://guest:guest@localhost:5672/"
     
-    class Config:
-        env_file = ".env"
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 settings = Settings()
