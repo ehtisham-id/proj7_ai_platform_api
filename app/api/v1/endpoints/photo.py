@@ -14,8 +14,8 @@ router = APIRouter(prefix="/photo", tags=["Photo Editing"])
 
 @router.post("/edit", response_model=dict)
 async def edit_photo(
-    file: UploadFile = File(...),
     operations: PhotoEdit,
+    file: UploadFile = File(...),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):

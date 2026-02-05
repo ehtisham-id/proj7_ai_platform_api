@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, UploadFile, File, HTTPException
+from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, Form
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.core.security import get_current_user
@@ -10,13 +10,14 @@ from app.schemas.conversion import ConversionRequest
 import mimetypes
 import uuid
 from typing import Dict, Any
+import os
 
 router = APIRouter(prefix="/convert", tags=["File Conversions"])
 
 @router.post("/", response_model=dict)
 async def convert_file(
+    conversion: str = Form(...),
     file: UploadFile = File(...),
-    conversion: ConversionRequest,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
@@ -29,15 +30,18 @@ async def convert_file(
     source_format = file.content_type.split('/')[-1] if file.content_type else file.filename.split('.')[-1]
     
     try:
+        # parse conversion JSON from form field
+        conversion_obj = ConversionRequest.parse_raw(conversion)
+
         converted_content = conversion_service.convert_file(
             file_content=content,
             source_format=source_format,
-            target_format=conversion.target_format
+            target_format=conversion_obj.target_format
         )
         
         # Generate filename
         name, ext = os.path.splitext(file.filename)
-        target_ext = f".{conversion.target_format}"
+        target_ext = f".{conversion_obj.target_format}"
         new_filename = f"{name}_converted{target_ext}"
         
         # Save to MinIO
@@ -47,7 +51,7 @@ async def convert_file(
             metadata={
                 'operation': 'file_conversion',
                 'source': file.filename,
-                'target_format': conversion.target_format,
+                'target_format': conversion_obj.target_format,
                 'user_id': str(current_user.id)
             }
         )
@@ -57,7 +61,7 @@ async def convert_file(
             filename=new_filename,
             user_id=current_user.id,
             object_name=object_name,
-            mime_type=f"application/{conversion.target_format}" if conversion.target_format != 'pdf' else 'application/pdf',
+            mime_type=f"application/{conversion_obj.target_format}" if conversion_obj.target_format != 'pdf' else 'application/pdf',
             size_bytes=len(converted_content)
         )
         db.add(db_file)
@@ -71,7 +75,7 @@ async def convert_file(
             "url": url,
             "filename": new_filename,
             "source_format": source_format,
-            "target_format": conversion.target_format,
+            "target_format": conversion_obj.target_format,
             "size_bytes": len(converted_content)
         }
         

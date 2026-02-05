@@ -1,12 +1,10 @@
-version: '3.8'
-
 services:
   postgres:
     image: postgres:16
     environment:
       POSTGRES_DB: ai_platform
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
     ports:
       - "5432:5432"
     volumes:
@@ -17,7 +15,7 @@ services:
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin123
     ports:
       - "9000:9000"
       - "9001:9001"
@@ -59,7 +57,7 @@ services:
       RABBITMQ_DEFAULT_PASS: guest
 
   backend:
-    build: ./backend
+    build: .
     ports:
       - "8000:8000"
     depends_on:
@@ -75,11 +73,11 @@ services:
       - ./backend:/app
 
   celery:
-  build: ./backend
-  command: celery -A celery_app worker --loglevel=info -Q ai_platform
-  volumes:
-    - ./backend:/app
-  depends_on:
+    build: .
+    command: celery -A celery_app worker --loglevel=info -Q ai_platform
+    volumes:
+    - ./:/app
+    depends_on:
     - redis
     - rabbitmq
     - postgres

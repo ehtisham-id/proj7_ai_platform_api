@@ -1,6 +1,6 @@
-from sqlalchemy import ForeignKey, Integer, DateTime
+from sqlalchemy import ForeignKey, Integer, DateTime, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from app.models.base import Base
+from app.core.database import Base
 
 class FileVersion(Base):
     __tablename__ = "file_versions"

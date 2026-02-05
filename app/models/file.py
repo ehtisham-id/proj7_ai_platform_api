@@ -1,6 +1,6 @@
 from sqlalchemy import String, Integer, DateTime, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from app.models.base import Base
+from app.core.database import Base
 from typing import List
 
 class File(Base):
