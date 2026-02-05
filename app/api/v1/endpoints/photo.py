@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, UploadFile, File, HTTPException
+from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, Form
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.core.security import get_current_user
@@ -14,7 +14,7 @@ router = APIRouter(prefix="/photo", tags=["Photo Editing"])
 
 @router.post("/edit", response_model=dict)
 async def edit_photo(
-    operations: PhotoEdit,
+    operations: str = Form(...),
     file: UploadFile = File(...),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
@@ -28,8 +28,9 @@ async def edit_photo(
         raise HTTPException(status_code=400, detail="File too large")
     
     try:
-        # Process image
-        processed_image = photo_service.process_photo(content, operations.dict(exclude_unset=True))
+        # parse operations JSON from form field and process image
+        operations_obj = PhotoEdit.parse_raw(operations)
+        processed_image = photo_service.process_photo(content, operations_obj.dict(exclude_unset=True))
         
         # Save to MinIO
         filename = f"edited_{uuid.uuid4().hex[:8]}_{file.filename}"
@@ -39,8 +40,8 @@ async def edit_photo(
             metadata={
                 'operation': 'photo_edit',
                 'original': file.filename,
-                'filter': operations.filter,
-                'rotate': str(operations.rotate),
+                'filter': operations_obj.filter,
+                'rotate': str(operations_obj.rotate),
                 'user_id': str(current_user.id)
             }
         )
@@ -63,7 +64,7 @@ async def edit_photo(
             "edited_file_id": db_file.id,
             "url": url,
             "filename": filename,
-            "operations": operations.dict(exclude_unset=True),
+            "operations": operations_obj.dict(exclude_unset=True),
             "size_bytes": len(processed_image)
         }
         
