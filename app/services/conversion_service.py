@@ -1,9 +1,13 @@
 import pandas as pd
 from io import BytesIO
 import img2pdf
-from pydub import AudioSegment
 import os
 from typing import Dict, Any
+
+try:
+    from pydub import AudioSegment
+except Exception:
+    AudioSegment = None
 
 class ConversionService:
     SUPPORTED_CONVERSIONS = {
@@ -11,7 +15,6 @@ class ConversionService:
         'excel_to_csv': lambda data: ConversionService.excel_to_csv(data),
         'image_to_pdf': lambda data: img2pdf.convert(data),
         'txt_to_pdf': lambda data: ConversionService.txt_to_pdf(data),
-        'audio_to_mp3': lambda data: ConversionService.audio_to_mp3(data),
     }
     
     @staticmethod
@@ -33,8 +36,11 @@ class ConversionService:
     def txt_to_pdf(txt_bytes: bytes) -> bytes:
         text = txt_bytes.decode('utf-8')
         # Simple text to PDF (using reportlab or similar)
-        from reportlab.pdfgen import canvas
-        from reportlab.lib.pagesizes import letter
+        try:
+            from reportlab.pdfgen import canvas
+            from reportlab.lib.pagesizes import letter
+        except Exception as exc:
+            raise ValueError("Text-to-PDF conversion is unavailable: install reportlab") from exc
         buffer = BytesIO()
         p = canvas.Canvas(buffer, pagesize=letter)
         width, height = letter
@@ -51,6 +57,8 @@ class ConversionService:
     
     @staticmethod
     def audio_to_mp3(audio_bytes: bytes, input_format: str) -> bytes:
+        if AudioSegment is None:
+            raise ValueError("Audio conversion is unavailable: install pydub and ffmpeg")
         audio = AudioSegment.from_file(BytesIO(audio_bytes), format=input_format)
         output = BytesIO()
         audio.export(output, format="mp3", bitrate="192k")
@@ -61,6 +69,8 @@ class ConversionService:
         conversion_key = f"{source_format}_to_{target_format}"
         if conversion_key in ConversionService.SUPPORTED_CONVERSIONS:
             return ConversionService.SUPPORTED_CONVERSIONS[conversion_key](file_content)
+        if target_format == "mp3":
+            return ConversionService.audio_to_mp3(file_content, source_format)
         raise ValueError(f"Unsupported conversion: {source_format} → {target_format}")
 
 conversion_service = ConversionService()

@@ -8,6 +8,7 @@ from app.services.minio_service import minio_service
 from app.services.qr_service import qr_service
 from app.schemas.qr import QRGenerate
 from app.schemas.file import FileOut
+import uuid
 
 router = APIRouter(prefix="/qrcode", tags=["QR Code Generation"])
 

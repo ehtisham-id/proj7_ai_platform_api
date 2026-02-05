@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status, Response
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File as FileParam, status, Response
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.core.security import get_current_user
 from app.models.user import User
-from app.models.file import File, FileVersion
+from app.models.file import File as FileModel
+from app.models.file_version import FileVersion
 from app.services.minio_service import minio_service
 from app.schemas.file import FileOut, FileVersionOut, FileRename
 import uuid
@@ -14,7 +15,7 @@ router = APIRouter(prefix="/files", tags=["File Management"])
 
 @router.post("/", response_model=FileOut, status_code=201)
 async def upload_file(
-    file: UploadFile = File(...),
+    file: UploadFile = FileParam(...),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
@@ -34,7 +35,7 @@ async def upload_file(
     )
     
     # Save metadata to DB
-    db_file = File(
+    db_file = FileModel(
         filename=file.filename,
         user_id=current_user.id,
         object_name=object_name,
@@ -53,7 +54,7 @@ async def download_file(
     db: AsyncSession = Depends(get_db)
 ):
     result = await db.execute(
-        select(File).where(File.id == file_id, File.user_id == current_user.id)
+        select(FileModel).where(FileModel.id == file_id, FileModel.user_id == current_user.id)
     )
     db_file = result.scalar_one_or_none()
     
@@ -77,7 +78,7 @@ async def delete_file(
     db: AsyncSession = Depends(get_db)
 ):
     result = await db.execute(
-        select(File).where(File.id == file_id, File.user_id == current_user.id)
+        select(FileModel).where(FileModel.id == file_id, FileModel.user_id == current_user.id)
     )
     db_file = result.scalar_one_or_none()
     
@@ -97,7 +98,7 @@ async def rename_file(
     db: AsyncSession = Depends(get_db)
 ):
     result = await db.execute(
-        select(File).where(File.id == file_id, File.user_id == current_user.id)
+        select(FileModel).where(FileModel.id == file_id, FileModel.user_id == current_user.id)
     )
     db_file = result.scalar_one_or_none()
     

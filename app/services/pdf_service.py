@@ -1,9 +1,15 @@
 from pypdf import PdfReader, PdfWriter
 from io import BytesIO
 import img2pdf
-from docx2pdf import convert as docx2pdf
+try:
+    from docx2pdf import convert as docx2pdf
+except Exception:
+    docx2pdf = None
 from typing import List
-import fitz  # PyMuPDF for better conversion
+try:
+    import fitz  # PyMuPDF for better conversion
+except Exception:
+    fitz = None
 import os
 
 class PDFService:
@@ -28,6 +34,8 @@ class PDFService:
         if "image/" in mime_type:
             return img2pdf.convert(file_content)
         elif mime_type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+            if docx2pdf is None:
+                raise ValueError("DOCX conversion is unavailable: install docx2pdf")
             # Save temp file for docx conversion
             with open("temp.docx", "wb") as f:
                 f.write(file_content)
@@ -38,6 +46,8 @@ class PDFService:
             os.remove("temp.pdf")
             return result
         elif mime_type == "text/plain":
+            if fitz is None:
+                raise ValueError("Text-to-PDF conversion is unavailable: install PyMuPDF")
             doc = fitz.open()
             page = doc.new_page()
             page.insert_text((72, 72), "Text content conversion not fully implemented")

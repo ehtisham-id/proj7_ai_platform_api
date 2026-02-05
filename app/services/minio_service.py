@@ -1,6 +1,7 @@
 from minio import Minio
 from minio.error import S3Error
 import io
+import logging
 from app.core.config import settings
 from typing import Optional
 import uuid
@@ -18,8 +19,13 @@ class MinIOService:
         self._ensure_bucket()
     
     def _ensure_bucket(self):
-        if not self.client.bucket_exists(self.bucket):
-            self.client.make_bucket(self.bucket)
+        try:
+            if not self.client.bucket_exists(self.bucket):
+                self.client.make_bucket(self.bucket)
+        except S3Error as exc:
+            logging.getLogger(__name__).warning(
+                "MinIO bucket check failed: %s", exc
+            )
     
     def upload_file(self, filename: str, file_content: bytes, metadata: dict = None) -> str:
         object_name = f"{uuid.uuid4()}/{filename}"

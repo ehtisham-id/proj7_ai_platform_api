@@ -1,12 +1,12 @@
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional, Dict, Any
 
 class PhotoEdit(BaseModel):
-    filter: Optional[str] = Field(None, regex="^(grayscale|blur|sharpen|edge|vintage|brighten)$")
+    filter: Optional[str] = Field(None, pattern="^(grayscale|blur|sharpen|edge|vintage|brighten)$")
     rotate: Optional[int] = Field(None, ge=-360, le=360)
     resize: Optional[Dict[str, int]] = None
     
-    @validator('resize')
+    @field_validator('resize')
     def validate_resize(cls, v):
         if v:
             if not all(k in v for k in ['width', 'height']):

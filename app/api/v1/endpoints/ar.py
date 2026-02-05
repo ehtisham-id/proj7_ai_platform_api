@@ -1,9 +1,9 @@
-from fastapi import APIRouter, Depends, UploadFile, File, HTTPException
+from fastapi import APIRouter, Depends, UploadFile, File as FileParam, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.core.security import get_current_user
 from app.models.user import User
-from app.models.file import File
+from app.models.file import File as FileModel
 from app.services.minio_service import minio_service
 from app.services.ar_menu_service import ar_menu_service
 from app.services.pdf_service import pdf_service
@@ -13,7 +13,7 @@ router = APIRouter(prefix="/ar/menu", tags=["AR Menu"])
 
 @router.post("/create", response_model=dict)
 async def create_ar_menu(
-    file: UploadFile = File(...),
+    file: UploadFile = FileParam(...),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
@@ -51,7 +51,7 @@ async def create_ar_menu(
         preview_url = minio_service.get_presigned_url(preview_object_name)
         
         # Save to database
-        db_file = File(
+        db_file = FileModel(
             filename=menu_filename,
             user_id=current_user.id,
             object_name=menu_object_name,
