@@ -4,6 +4,8 @@ import io
 import logging
 from app.core.config import settings
 from typing import Optional
+from datetime import timedelta
+from urllib.parse import urlparse, urlunparse
 import uuid
 import os
 
@@ -47,6 +49,20 @@ class MinIOService:
         self.client.remove_object(self.bucket, object_name)
     
     def get_presigned_url(self, object_name: str, expires: int = 3600) -> str:
-        return self.client.presigned_get_object(self.bucket, object_name, expires=expires)
+        # MinIO expects a timedelta for expires; accept int seconds for convenience.
+        exp = timedelta(seconds=expires) if isinstance(expires, int) else expires
+        url = self.client.presigned_get_object(self.bucket, object_name, expires=exp)
+        public = settings.MINIO_PUBLIC_ENDPOINT
+        if public and public != settings.MINIO_ENDPOINT:
+            # Replace host with the public endpoint for browser access
+            parsed = urlparse(url)
+            netloc = public
+            # If public includes scheme, preserve it
+            if "://" in public:
+                pub_parsed = urlparse(public)
+                netloc = pub_parsed.netloc or pub_parsed.path
+                parsed = parsed._replace(scheme=pub_parsed.scheme or parsed.scheme)
+            url = urlunparse(parsed._replace(netloc=netloc))
+        return url
 
 minio_service = MinIOService()

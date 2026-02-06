@@ -972,7 +972,7 @@
             `;
         }
 
-        let analysisChart;
+        let analysisCharts = [];
         async function uploadAnalysis() {
             const fileInput = document.getElementById('analysis-file');
             const formData = new FormData();
@@ -986,51 +986,173 @@
             document.getElementById('analysis-result').innerHTML = `
                 <div class="glass p-6 rounded-lg">
                     <p class="mb-4"><span class="text-neon-purple">ANALYSIS ID:</span> ${data.analysis_id}</p>
-                    <pre class="result-display mb-4">${JSON.stringify(data.summary, null, 2)}</pre>
-                    <canvas id="analysis-chart"></canvas>
+                    <div class="grid gap-6">
+                        <div>
+                            <h3 class="text-neon-purple mb-2">Summary</h3>
+                            <pre class="result-display mb-4">${JSON.stringify(data.summary, null, 2)}</pre>
+                            <canvas id="analysis-summary-chart"></canvas>
+                        </div>
+                        <div>
+                            <h3 class="text-neon-purple mb-2">Numeric Stats</h3>
+                            <canvas id="analysis-numeric-chart"></canvas>
+                        </div>
+                        <div>
+                            <h3 class="text-neon-purple mb-2">Categorical Distributions</h3>
+                            <div id="analysis-categorical-charts" class="grid md:grid-cols-2 gap-6"></div>
+                        </div>
+                        <div>
+                            <h3 class="text-neon-purple mb-2">Server Charts</h3>
+                            <div id="analysis-server-charts" class="grid md:grid-cols-2 gap-6"></div>
+                        </div>
+                    </div>
                 </div>
             `;
             
-            if (data.summary && data.summary.rows) {
-                const ctx = document.getElementById('analysis-chart').getContext('2d');
-                if (analysisChart) analysisChart.destroy();
-                analysisChart = new Chart(ctx, {
+            renderAnalysisCharts(data);
+        }
+
+        function resetAnalysisCharts() {
+            analysisCharts.forEach(c => c.destroy());
+            analysisCharts = [];
+        }
+
+        function chartOptions() {
+            return {
+                responsive: true,
+                animation: { duration: 1200, easing: 'easeInOutQuart' },
+                plugins: {
+                    legend: {
+                        labels: { color: '#fff', font: { family: 'Rajdhani' } }
+                    }
+                },
+                scales: {
+                    y: {
+                        ticks: { color: '#fff' },
+                        grid: { color: 'rgba(0, 240, 255, 0.1)' }
+                    },
+                    x: {
+                        ticks: { color: '#fff' },
+                        grid: { color: 'rgba(0, 240, 255, 0.1)' }
+                    }
+                }
+            };
+        }
+
+        function renderAnalysisCharts(data) {
+            resetAnalysisCharts();
+            if (!data?.summary) return;
+
+            // Summary chart
+            const summaryCtx = document.getElementById('analysis-summary-chart')?.getContext('2d');
+            if (summaryCtx) {
+                analysisCharts.push(new Chart(summaryCtx, {
                     type: 'bar',
                     data: {
-                        labels: ['Rows', 'Columns'],
+                        labels: ['Rows', 'Columns', 'Missing', 'Duplicates'],
                         datasets: [{
-                            label: 'Data Metrics',
-                            data: [data.summary.rows, data.columns?.length || 0],
+                            label: 'Dataset Overview',
+                            data: [
+                                data.summary.rows || 0,
+                                data.summary.columns || (data.columns?.length || 0),
+                                data.summary.missing_values || 0,
+                                data.summary.duplicate_rows || 0
+                            ],
                             backgroundColor: [
                                 'rgba(0, 240, 255, 0.6)',
-                                'rgba(176, 0, 255, 0.6)'
+                                'rgba(176, 0, 255, 0.6)',
+                                'rgba(255, 184, 0, 0.6)',
+                                'rgba(255, 77, 109, 0.6)'
                             ],
                             borderColor: [
                                 'rgba(0, 240, 255, 1)',
-                                'rgba(176, 0, 255, 1)'
+                                'rgba(176, 0, 255, 1)',
+                                'rgba(255, 184, 0, 1)',
+                                'rgba(255, 77, 109, 1)'
                             ],
                             borderWidth: 2
                         }]
                     },
+                    options: chartOptions()
+                }));
+            }
+
+            // Numeric stats chart (mean/std/min/max per numeric column)
+            const numericStats = data.summary.numeric_stats || {};
+            const numericCols = Object.keys(numericStats);
+            const numericCtx = document.getElementById('analysis-numeric-chart')?.getContext('2d');
+            if (numericCtx && numericCols.length) {
+                const mean = numericCols.map(c => numericStats[c].mean);
+                const std = numericCols.map(c => numericStats[c].std);
+                const min = numericCols.map(c => numericStats[c].min);
+                const max = numericCols.map(c => numericStats[c].max);
+
+                analysisCharts.push(new Chart(numericCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: numericCols,
+                        datasets: [
+                            { label: 'Mean', data: mean, backgroundColor: 'rgba(0, 240, 255, 0.6)', borderColor: 'rgba(0, 240, 255, 1)', borderWidth: 1 },
+                            { label: 'Std', data: std, backgroundColor: 'rgba(176, 0, 255, 0.6)', borderColor: 'rgba(176, 0, 255, 1)', borderWidth: 1 },
+                            { label: 'Min', data: min, backgroundColor: 'rgba(0, 255, 163, 0.6)', borderColor: 'rgba(0, 255, 163, 1)', borderWidth: 1 },
+                            { label: 'Max', data: max, backgroundColor: 'rgba(255, 102, 0, 0.6)', borderColor: 'rgba(255, 102, 0, 1)', borderWidth: 1 }
+                        ]
+                    },
                     options: {
-                        responsive: true,
-                        animation: { duration: 1500, easing: 'easeInOutQuart' },
+                        ...chartOptions(),
                         plugins: {
                             legend: {
                                 labels: { color: '#fff', font: { family: 'Rajdhani' } }
                             }
-                        },
-                        scales: {
-                            y: {
-                                ticks: { color: '#fff' },
-                                grid: { color: 'rgba(0, 240, 255, 0.1)' }
-                            },
-                            x: {
-                                ticks: { color: '#fff' },
-                                grid: { color: 'rgba(0, 240, 255, 0.1)' }
-                            }
                         }
                     }
+                }));
+            }
+
+            // Categorical distributions
+            const categoricalStats = data.summary.categorical_stats || {};
+            const catContainer = document.getElementById('analysis-categorical-charts');
+            if (catContainer) {
+                catContainer.innerHTML = '';
+                Object.entries(categoricalStats).forEach(([col, counts], idx) => {
+                    const canvasId = `cat-chart-${idx}`;
+                    const card = document.createElement('div');
+                    card.className = 'glass p-4 rounded-lg';
+                    card.innerHTML = `<div class="text-neon-blue mb-2">${col}</div><canvas id="${canvasId}"></canvas>`;
+                    catContainer.appendChild(card);
+
+                    const ctx = document.getElementById(canvasId)?.getContext('2d');
+                    if (!ctx) return;
+                    const labels = Object.keys(counts);
+                    const values = Object.values(counts);
+                    analysisCharts.push(new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels,
+                            datasets: [{
+                                label: 'Top Values',
+                                data: values,
+                                backgroundColor: 'rgba(0, 240, 255, 0.45)',
+                                borderColor: 'rgba(0, 240, 255, 1)',
+                                borderWidth: 1
+                            }]
+                        },
+                        options: chartOptions()
+                    }));
+                });
+            }
+
+            // Server-generated charts (MinIO URLs)
+            const serverCharts = document.getElementById('analysis-server-charts');
+            if (serverCharts) {
+                serverCharts.innerHTML = '';
+                (data.charts_url || []).forEach((url, i) => {
+                    const card = document.createElement('div');
+                    card.className = 'glass p-4 rounded-lg text-center';
+                    card.innerHTML = `
+                        <div class="text-neon-blue mb-2">Chart ${i + 1}</div>
+                        <img src="${url}" class="w-full rounded-lg border-2 border-neon-blue" style="border-color: var(--neon-blue)" alt="Analysis Chart ${i + 1}">
+                    `;
+                    serverCharts.appendChild(card);
                 });
             }
         }

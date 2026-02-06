@@ -1,4 +1,4 @@
-MenuID,Category,ItemName,Price,Availability
+MenuID,Category,name,price,Availability
 101,Beverages,Coffee,2.50,True
 102,Beverages,Tea,2.00,True
 201,Sandwiches,Club Sandwich,8.50,True

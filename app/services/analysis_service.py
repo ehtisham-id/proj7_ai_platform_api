@@ -12,6 +12,20 @@ from app.services.minio_service import minio_service
 
 class AnalysisService:
     @staticmethod
+    def _jsonable(obj: Any) -> Any:
+        if isinstance(obj, dict):
+            return {k: AnalysisService._jsonable(v) for k, v in obj.items()}
+        if isinstance(obj, list):
+            return [AnalysisService._jsonable(v) for v in obj]
+        if isinstance(obj, (np.integer,)):
+            return int(obj)
+        if isinstance(obj, (np.floating,)):
+            return float(obj)
+        if isinstance(obj, (np.bool_,)):
+            return bool(obj)
+        return obj
+
+    @staticmethod
     def analyze_dataset(file_content: bytes, file_type: str) -> Dict[str, Any]:
         """Comprehensive dataset analysis with stats and insights."""
         if file_type == "text/csv":
@@ -47,7 +61,8 @@ class AnalysisService:
         cat_cols = df.select_dtypes(include=['object']).columns
         if len(cat_cols) > 0:
             summary["categorical_stats"] = {
-                col: dict(df[col].value_counts().head(5)) for col in cat_cols
+                col: {k: int(v) for k, v in df[col].value_counts().head(5).to_dict().items()}
+                for col in cat_cols
             }
         
         # Correlations
@@ -64,7 +79,13 @@ class AnalysisService:
         insights = AnalysisService._generate_insights(df, summary)
         summary["insights"] = insights
         
-        return {"summary": summary, "columns": df.columns.tolist(), "sample_data": df.head(5).to_dict()}
+        sample_data = df.head(5).where(pd.notnull(df), None).to_dict()
+        result = {
+            "summary": summary,
+            "columns": df.columns.tolist(),
+            "sample_data": sample_data,
+        }
+        return AnalysisService._jsonable(result)
     
     @staticmethod
     def _generate_insights(df: pd.DataFrame, summary: Dict) -> List[str]:
