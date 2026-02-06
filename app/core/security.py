@@ -5,7 +5,8 @@ from passlib.context import CryptContext
 from pydantic import BaseModel
 from app.core.config import settings
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# Use bcrypt_sha256 to avoid bcrypt's 72-byte password limit; keep bcrypt for legacy hashes.
+pwd_context = CryptContext(schemes=["bcrypt_sha256", "bcrypt"], deprecated="auto")
 
 class Token(BaseModel):
     access_token: str
