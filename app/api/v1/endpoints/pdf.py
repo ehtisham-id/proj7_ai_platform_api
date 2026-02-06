@@ -49,7 +49,8 @@ async def merge_pdfs(
     await db.commit()
     await db.refresh(db_file)
     
-    return {"merged_file_id": db_file.id}
+    url = minio_service.get_presigned_url(object_name)
+    return {"merged_file_id": db_file.id, "url": url, "filename": "merged.pdf"}
 
 @router.post("/convert", response_model=dict)
 async def convert_to_pdf(

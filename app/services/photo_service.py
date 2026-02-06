@@ -12,6 +12,7 @@ class PhotoService:
         'sharpen': lambda img: cv2.filter2D(img, -1, np.array([[-1,-1,-1], [-1,9,-1], [-1,-1,-1]])),
         'edge': lambda img: cv2.Canny(img, 100, 200),
         'vintage': lambda img: PhotoService._vintage_filter(img),
+        'sepia': lambda img: PhotoService._vintage_filter(img),
         'brighten': lambda img: np.clip(img * 1.3, 0, 255).astype(np.uint8)
     }
     

@@ -56,6 +56,7 @@ class PDFService:
             doc.close()
             return output.getvalue()
         else:
-            raise ValueError(f"Unsupported format: {mime_type}")
+            supported = "image/*, application/vnd.openxmlformats-officedocument.wordprocessingml.document (docx), text/plain"
+            raise ValueError(f"Unsupported format: {mime_type}. Supported: {supported}")
 
 pdf_service = PDFService()

@@ -657,6 +657,12 @@
             console.insertBefore(entry, console.firstChild);
         }
 
+        function normalizeObjectUrl(url) {
+            if (!url) return url;
+            const localHost = `${window.location.protocol}//${window.location.hostname}:9000`;
+            return url.replace("http://minio:9000", localHost).replace("https://minio:9000", localHost);
+        }
+
         async function handleResponse(promise, successMsg) {
             try {
                 const response = await promise;
@@ -789,13 +795,14 @@
 
         function displayFileResult(data) {
             const result = document.getElementById('files-result');
+            const url = normalizeObjectUrl(data.url);
             result.innerHTML = `
                 <div class="glass p-6 rounded-lg">
                     <p class="mb-2"><span class="text-neon-blue">FILE ID:</span> ${data.id}</p>
                     <p class="mb-2"><span class="text-neon-blue">FILENAME:</span> ${data.filename}</p>
                     <p class="mb-2"><span class="text-neon-blue">SIZE:</span> ${data.size_bytes} bytes</p>
                     <p class="mb-4"><span class="text-neon-blue">MIME:</span> ${data.mime_type || 'N/A'}</p>
-                    ${data.url ? `<a href="${data.url}" target="_blank" class="hover-glow">↓ DOWNLOAD FILE</a>` : ''}
+                    ${url ? `<a href="${url}" target="_blank" class="hover-glow">↓ DOWNLOAD FILE</a>` : ''}
                 </div>
             `;
         }
@@ -815,13 +822,14 @@
         }
 
         function displayConvertResult(data) {
+            const url = normalizeObjectUrl(data.url);
             document.getElementById('convert-result').innerHTML = `
                 <div class="glass p-6 rounded-lg">
                     <p class="mb-2"><span class="text-neon-purple">FILE ID:</span> ${data.converted_file_id}</p>
                     <p class="mb-2"><span class="text-neon-purple">FILENAME:</span> ${data.filename}</p>
                     <p class="mb-2"><span class="text-neon-purple">FORMAT:</span> ${data.source_format} → ${data.target_format}</p>
                     <p class="mb-4"><span class="text-neon-purple">SIZE:</span> ${data.size_bytes} bytes</p>
-                    <a href="${data.url}" target="_blank" class="hover-glow">↓ DOWNLOAD CONVERTED</a>
+                    <a href="${url}" target="_blank" class="hover-glow">↓ DOWNLOAD CONVERTED</a>
                 </div>
             `;
         }
@@ -854,13 +862,14 @@
         }
 
         function displayPhotoResult(data) {
+            const url = normalizeObjectUrl(data.url);
             document.getElementById('photo-result').innerHTML = `
                 <div class="glass p-6 rounded-lg">
                     <p class="mb-2"><span class="text-neon-pink">FILE ID:</span> ${data.edited_file_id}</p>
                     <p class="mb-2"><span class="text-neon-pink">FILENAME:</span> ${data.filename}</p>
                     <p class="mb-4"><span class="text-neon-pink">SIZE:</span> ${data.size_bytes} bytes</p>
-                    <a href="${data.url}" target="_blank" class="hover-glow mb-4 block">↓ DOWNLOAD EDITED</a>
-                    <img src="${data.url}" class="w-full max-w-2xl rounded-lg border-2 border-neon-pink" style="border-color: var(--neon-pink)" alt="Edited">
+                    <a href="${url}" target="_blank" class="hover-glow mb-4 block">↓ DOWNLOAD EDITED</a>
+                    <img src="${url}" class="w-full max-w-2xl rounded-lg border-2 border-neon-pink" style="border-color: var(--neon-pink)" alt="Edited">
                 </div>
             `;
         }
@@ -900,12 +909,13 @@
                 'QR code generated'
             );
             
+            const url = normalizeObjectUrl(data.url);
             document.getElementById('qr-result').innerHTML = `
                 <div class="glass p-6 rounded-lg text-center">
                     <p class="mb-2"><span class="text-neon-blue">QR ID:</span> ${data.qrcode_file_id}</p>
                     <p class="mb-4"><span class="text-neon-blue">SIZE:</span> ${data.size}px</p>
-                    <img src="${data.url}" class="mx-auto mb-4 border-2 rounded-lg" style="border-color: var(--neon-blue)" alt="QR">
-                    <a href="${data.url}" target="_blank" class="hover-glow">↓ DOWNLOAD QR</a>
+                    <img src="${url}" class="mx-auto mb-4 border-2 rounded-lg" style="border-color: var(--neon-blue)" alt="QR">
+                    <a href="${url}" target="_blank" class="hover-glow">↓ DOWNLOAD QR</a>
                 </div>
             `;
         }
@@ -936,10 +946,11 @@
                     
                     if (jobData.data.status === 'completed') {
                         clearInterval(pollInterval);
+                        const url = normalizeObjectUrl(jobData.data.result_url);
                         document.getElementById('summarize-result').innerHTML = `
                             <div class="glass p-6 rounded-lg">
                                 <p class="mb-4"><span class="text-neon-purple">STATUS:</span> ✓ COMPLETED</p>
-                                <a href="${jobData.data.result_url}" target="_blank" class="hover-glow">↓ DOWNLOAD SUMMARY</a>
+                                <a href="${url}" target="_blank" class="hover-glow">↓ DOWNLOAD SUMMARY</a>
                             </div>
                         `;
                         showToast('Summarization completed');
@@ -961,13 +972,15 @@
                 'AR Menu created'
             );
             
+            const previewUrl = normalizeObjectUrl(data.preview_url);
+            const menuUrl = normalizeObjectUrl(data.menu_url);
             document.getElementById('ar-result').innerHTML = `
                 <div class="glass p-6 rounded-lg">
                     <p class="mb-2"><span class="text-neon-blue">MENU ID:</span> ${data.ar_menu_id}</p>
                     <p class="mb-2"><span class="text-neon-blue">ITEMS:</span> ${data.item_count}</p>
                     <p class="mb-4"><span class="text-neon-blue">QR CODES:</span> ${data.qr_count}</p>
-                    <a href="${data.preview_url}" target="_blank" class="hover-glow block mb-2">👁 PREVIEW</a>
-                    <a href="${data.menu_url}" target="_blank" class="hover-glow">🔗 MENU URL</a>
+                    <a href="${previewUrl}" target="_blank" class="hover-glow block mb-2">👁 PREVIEW</a>
+                    <a href="${menuUrl}" target="_blank" class="hover-glow">🔗 MENU URL</a>
                 </div>
             `;
         }
@@ -1146,11 +1159,12 @@
             if (serverCharts) {
                 serverCharts.innerHTML = '';
                 (data.charts_url || []).forEach((url, i) => {
+                    const fixed = normalizeObjectUrl(url);
                     const card = document.createElement('div');
                     card.className = 'glass p-4 rounded-lg text-center';
                     card.innerHTML = `
                         <div class="text-neon-blue mb-2">Chart ${i + 1}</div>
-                        <img src="${url}" class="w-full rounded-lg border-2 border-neon-blue" style="border-color: var(--neon-blue)" alt="Analysis Chart ${i + 1}">
+                        <img src="${fixed}" class="w-full rounded-lg border-2 border-neon-blue" style="border-color: var(--neon-blue)" alt="Analysis Chart ${i + 1}">
                     `;
                     serverCharts.appendChild(card);
                 });

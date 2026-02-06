@@ -10,6 +10,10 @@ import json
 from io import BytesIO
 import pandas as pd
 import uuid
+import logging
+import traceback
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/analysis", tags=["Data Analysis"])
 
@@ -74,4 +78,5 @@ async def analyze_dataset(
         }
         
     except Exception as e:
+        logger.error("Analysis failed: %s\n%s", str(e), traceback.format_exc())
         raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")

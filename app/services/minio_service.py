@@ -5,17 +5,28 @@ import logging
 from app.core.config import settings
 from typing import Optional
 from datetime import timedelta
-from urllib.parse import urlparse, urlunparse
 import uuid
 import os
 
 class MinIOService:
     def __init__(self):
+        # Internal client for operations within Docker network
         self.client = Minio(
             settings.MINIO_ENDPOINT,
             access_key=settings.MINIO_ACCESS_KEY,
             secret_key=settings.MINIO_SECRET_KEY,
-            secure=False  # Set True in production with HTTPS
+            secure=False,  # Set True in production with HTTPS
+            region="us-east-1"  # Explicit region to avoid lookup
+        )
+        # Presign client uses public endpoint so signatures match browser requests
+        # Region must be set to avoid network calls (presign is local-only operation)
+        presign_endpoint = settings.MINIO_PUBLIC_ENDPOINT or settings.MINIO_ENDPOINT
+        self.presign_client = Minio(
+            presign_endpoint,
+            access_key=settings.MINIO_ACCESS_KEY,
+            secret_key=settings.MINIO_SECRET_KEY,
+            secure=False,
+            region="us-east-1"  # Must match server region to avoid network lookup
         )
         self.bucket = settings.MINIO_BUCKET
         self._ensure_bucket()
@@ -51,18 +62,7 @@ class MinIOService:
     def get_presigned_url(self, object_name: str, expires: int = 3600) -> str:
         # MinIO expects a timedelta for expires; accept int seconds for convenience.
         exp = timedelta(seconds=expires) if isinstance(expires, int) else expires
-        url = self.client.presigned_get_object(self.bucket, object_name, expires=exp)
-        public = settings.MINIO_PUBLIC_ENDPOINT
-        if public and public != settings.MINIO_ENDPOINT:
-            # Replace host with the public endpoint for browser access
-            parsed = urlparse(url)
-            netloc = public
-            # If public includes scheme, preserve it
-            if "://" in public:
-                pub_parsed = urlparse(public)
-                netloc = pub_parsed.netloc or pub_parsed.path
-                parsed = parsed._replace(scheme=pub_parsed.scheme or parsed.scheme)
-            url = urlunparse(parsed._replace(netloc=netloc))
-        return url
+        # Use presign_client (configured with public endpoint) so signature matches browser Host header
+        return self.presign_client.presigned_get_object(self.bucket, object_name, expires=exp)
 
 minio_service = MinIOService()

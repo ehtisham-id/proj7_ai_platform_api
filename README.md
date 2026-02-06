@@ -123,4 +123,6 @@ For exact request/response schemas, see `app/schemas/*.py`.
 3. Open a PR with clear description and changelog.
 
 ---
-If you want, I can also generate example `curl` or Postman requests for each endpoint, or produce OpenAPI enhancements. Which would you prefer next?
+MUST RUN docker 
+compose exec backend alembic upgrade head 
+after running container for first time

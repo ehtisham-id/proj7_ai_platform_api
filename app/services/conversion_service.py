@@ -10,11 +10,19 @@ except Exception:
     AudioSegment = None
 
 class ConversionService:
+    # Image formats that can be converted to PDF
+    IMAGE_FORMATS = {'png', 'jpg', 'jpeg', 'gif', 'bmp', 'tiff', 'webp'}
+    
     SUPPORTED_CONVERSIONS = {
         'csv_to_excel': lambda data: ConversionService.csv_to_excel(data),
+        'csv_to_xlsx': lambda data: ConversionService.csv_to_excel(data),
         'excel_to_csv': lambda data: ConversionService.excel_to_csv(data),
+        'xlsx_to_csv': lambda data: ConversionService.excel_to_csv(data),
+        'xls_to_csv': lambda data: ConversionService.excel_to_csv(data),
         'image_to_pdf': lambda data: img2pdf.convert(data),
         'txt_to_pdf': lambda data: ConversionService.txt_to_pdf(data),
+        'text_to_pdf': lambda data: ConversionService.txt_to_pdf(data),
+        'plain_to_pdf': lambda data: ConversionService.txt_to_pdf(data),
     }
     
     @staticmethod
@@ -66,11 +74,18 @@ class ConversionService:
     
     @staticmethod
     def convert_file(file_content: bytes, source_format: str, target_format: str) -> bytes:
-        conversion_key = f"{source_format}_to_{target_format}"
+        source_lower = source_format.lower()
+        target_lower = target_format.lower()
+        
+        # Handle image to PDF conversion for various image formats
+        if source_lower in ConversionService.IMAGE_FORMATS and target_lower == 'pdf':
+            return img2pdf.convert(file_content)
+        
+        conversion_key = f"{source_lower}_to_{target_lower}"
         if conversion_key in ConversionService.SUPPORTED_CONVERSIONS:
             return ConversionService.SUPPORTED_CONVERSIONS[conversion_key](file_content)
-        if target_format == "mp3":
-            return ConversionService.audio_to_mp3(file_content, source_format)
+        if target_lower == "mp3":
+            return ConversionService.audio_to_mp3(file_content, source_lower)
         raise ValueError(f"Unsupported conversion: {source_format} → {target_format}")
 
 conversion_service = ConversionService()

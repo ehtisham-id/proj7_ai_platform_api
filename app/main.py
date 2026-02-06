@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.api.v1 import endpoints
+from app.api.v1.endpoints.websocket import router as ws_router
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -20,6 +21,8 @@ app.add_middleware(
         "http://localhost:5173",
         "http://localhost:5500",
         "http://127.0.0.1:5500",
+        "http://localhost:5501",
+        "http://127.0.0.1:5501",
         "http://localhost:8000",
         "http://127.0.0.1:8000",
         "null",
@@ -36,3 +39,5 @@ async def health_check():
     return {"status": "healthy", "version": settings.VERSION}
 
 app.include_router(endpoints.router, prefix=settings.API_V1_STR)
+# WebSocket at root level (not under /api/v1)
+app.include_router(ws_router)

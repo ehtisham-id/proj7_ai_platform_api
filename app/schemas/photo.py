@@ -2,7 +2,7 @@ from pydantic import BaseModel, Field, field_validator
 from typing import Optional, Dict, Any
 
 class PhotoEdit(BaseModel):
-    filter: Optional[str] = Field(None, pattern="^(grayscale|blur|sharpen|edge|vintage|brighten)$")
+    filter: Optional[str] = Field(None, pattern="^(grayscale|blur|sharpen|edge|vintage|brighten|sepia)$")
     rotate: Optional[int] = Field(None, ge=-360, le=360)
     resize: Optional[Dict[str, int]] = None
     
