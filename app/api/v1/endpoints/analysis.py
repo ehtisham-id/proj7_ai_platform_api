@@ -6,7 +6,9 @@ from app.models.user import User
 from app.models.file import File as FileModel
 from app.services.minio_service import minio_service
 from app.services.analysis_service import analysis_service
-import mimetypes
+import json
+from io import BytesIO
+import pandas as pd
 import uuid
 
 router = APIRouter(prefix="/analysis", tags=["Data Analysis"])
@@ -51,7 +53,7 @@ async def analyze_dataset(
             charts_urls = []
         
         # Save dataset to DB
-    db_file = FileModel(
+        db_file = FileModel(
             filename=filename,
             user_id=current_user.id,
             object_name=object_name,

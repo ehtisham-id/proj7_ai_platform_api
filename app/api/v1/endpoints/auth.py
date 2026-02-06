@@ -1,11 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 from app.core.database import get_db
 from app.core.security import verify_password, get_password_hash, create_access_token
+from app.core.config import settings
 from app.models.user import User
 from app.schemas.user import UserCreate, UserOut, TokenResponse
-import random, string
+from jose import JWTError, jwt
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -14,7 +16,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 @router.post("/register", response_model=UserOut)
 async def register(user_in: UserCreate, db: AsyncSession = Depends(get_db)):
     # Check if user exists
-    existing_user = await db.get(User, user_in.email)
+    existing_user = await db.scalar(select(User).where(User.email == user_in.email))
     if existing_user:
         raise HTTPException(status_code=400, detail="Email already registered")
     
@@ -30,7 +32,7 @@ async def register(user_in: UserCreate, db: AsyncSession = Depends(get_db)):
 
 @router.post("/login", response_model=TokenResponse)
 async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_db)):
-    user = await db.get(User, form_data.username)
+    user = await db.scalar(select(User).where(User.email == form_data.username))
     if not user or not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -53,7 +55,7 @@ async def refresh_token(refresh_token: str, db: AsyncSession = Depends(get_db)):
         if payload.get("type") != "refresh":
             raise HTTPException(status_code=400, detail="Invalid refresh token")
         
-        user = await db.get(User, payload["sub"])
+        user = await db.scalar(select(User).where(User.email == payload["sub"]))
         if not user:
             raise HTTPException(status_code=400, detail="User not found")
         

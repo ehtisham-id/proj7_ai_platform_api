@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
+import sys
 from logging.config import fileConfig
 from alembic import context
 from sqlalchemy import pool
@@ -15,10 +17,19 @@ config = context.config
 fileConfig(config.config_file_name)
 logger = logging.getLogger('alembic.env')
 
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
 try:
     # Import application settings and metadata
     from app.core.config import settings
     from app.core.database import Base
+    # Import models so Alembic can discover table metadata for autogenerate
+    from app.models import user as _user  # noqa: F401
+    from app.models import file as _file  # noqa: F401
+    from app.models import file_version as _file_version  # noqa: F401
+    from app.models import job as _job  # noqa: F401
 except Exception as e:
     logger.error("Failed to import app config or Base metadata: %s", e)
     raise
