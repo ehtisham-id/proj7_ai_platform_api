@@ -13,8 +13,30 @@ class PhotoService:
         'edge': lambda img: cv2.Canny(img, 100, 200),
         'vintage': lambda img: PhotoService._vintage_filter(img),
         'sepia': lambda img: PhotoService._vintage_filter(img),
-        'brighten': lambda img: np.clip(img * 1.3, 0, 255).astype(np.uint8)
+        'brighten': lambda img: np.clip(img * 1.3, 0, 255).astype(np.uint8),
+        'darken': lambda img: np.clip(img * 0.7, 0, 255).astype(np.uint8),
+        'contrast': lambda img: cv2.convertScaleAbs(img, alpha=1.5, beta=0),
+        'invert': lambda img: cv2.bitwise_not(img),
+        'emboss': lambda img: cv2.filter2D(img, -1, np.array([[-2,-1,0], [-1,1,1], [0,1,2]])),
+        'warm': lambda img: PhotoService._warm_filter(img),
+        'cool': lambda img: PhotoService._cool_filter(img),
     }
+    
+    @staticmethod
+    def _warm_filter(img: np.ndarray) -> np.ndarray:
+        """Add warm/orange tint."""
+        result = img.copy().astype(np.float32)
+        result[:,:,2] = np.clip(result[:,:,2] * 1.1, 0, 255)  # Red
+        result[:,:,0] = np.clip(result[:,:,0] * 0.9, 0, 255)  # Blue
+        return result.astype(np.uint8)
+    
+    @staticmethod
+    def _cool_filter(img: np.ndarray) -> np.ndarray:
+        """Add cool/blue tint."""
+        result = img.copy().astype(np.float32)
+        result[:,:,0] = np.clip(result[:,:,0] * 1.1, 0, 255)  # Blue
+        result[:,:,2] = np.clip(result[:,:,2] * 0.9, 0, 255)  # Red
+        return result.astype(np.uint8)
     
     @staticmethod
     def _vintage_filter(img: np.ndarray) -> np.ndarray:

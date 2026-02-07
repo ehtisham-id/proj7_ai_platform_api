@@ -1,20 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Platform API - Neural Interface</title>
-    
+
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
+    <link
+        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+
     <!-- CDN Libraries -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/axios@1.6.5/dist/axios.min.js"></script>
     <script src="https://unpkg.com/filepond@4.30.4/dist/filepond.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <link href="https://unpkg.com/filepond@4.30.4/dist/filepond.min.css" rel="stylesheet">
-    
+
     <style>
         :root {
             --neon-blue: #00f0ff;
@@ -25,13 +28,13 @@
             --glass-bg: rgba(20, 24, 36, 0.7);
             --glass-border: rgba(0, 240, 255, 0.2);
         }
-        
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         body {
             font-family: 'Rajdhani', sans-serif;
             background: var(--dark-bg);
@@ -39,7 +42,7 @@
             overflow-x: hidden;
             position: relative;
         }
-        
+
         /* Animated Background */
         .bg-animated {
             position: fixed;
@@ -48,70 +51,87 @@
             width: 100%;
             height: 100%;
             z-index: 0;
-            background: 
+            background:
                 radial-gradient(circle at 20% 50%, rgba(0, 240, 255, 0.1) 0%, transparent 50%),
                 radial-gradient(circle at 80% 80%, rgba(176, 0, 255, 0.1) 0%, transparent 50%),
                 radial-gradient(circle at 40% 20%, rgba(255, 0, 170, 0.05) 0%, transparent 50%);
             animation: bgPulse 15s ease-in-out infinite;
         }
-        
+
         @keyframes bgPulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.8; }
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.8;
+            }
         }
-        
+
         .grid-overlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background-image: 
+            background-image:
                 linear-gradient(rgba(0, 240, 255, 0.03) 1px, transparent 1px),
                 linear-gradient(90deg, rgba(0, 240, 255, 0.03) 1px, transparent 1px);
             background-size: 50px 50px;
             z-index: 1;
             pointer-events: none;
         }
-        
+
         /* Glass Morphism */
         .glass {
             background: var(--glass-bg);
             backdrop-filter: blur(20px);
             border: 1px solid var(--glass-border);
-            box-shadow: 
+            box-shadow:
                 0 8px 32px 0 rgba(0, 240, 255, 0.1),
                 inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
         }
-        
+
         .glass:hover {
             border-color: var(--neon-blue);
-            box-shadow: 
+            box-shadow:
                 0 8px 32px 0 rgba(0, 240, 255, 0.3),
                 inset 0 1px 0 0 rgba(255, 255, 255, 0.2);
             transform: translateY(-2px);
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        
+
         /* Neon Text */
         .neon-text {
             font-family: 'Orbitron', sans-serif;
             text-transform: uppercase;
             letter-spacing: 3px;
             color: var(--neon-blue);
-            text-shadow: 
+            text-shadow:
                 0 0 10px var(--neon-blue),
                 0 0 20px var(--neon-blue),
                 0 0 30px var(--neon-blue);
             animation: neonFlicker 3s ease-in-out infinite;
         }
-        
+
         @keyframes neonFlicker {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.8; }
-            75% { opacity: 0.9; }
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.8;
+            }
+
+            75% {
+                opacity: 0.9;
+            }
         }
-        
+
         .title-glow {
             font-family: 'Orbitron', sans-serif;
             font-weight: 900;
@@ -123,12 +143,19 @@
             filter: drop-shadow(0 0 20px rgba(0, 240, 255, 0.5));
             animation: titlePulse 2s ease-in-out infinite;
         }
-        
+
         @keyframes titlePulse {
-            0%, 100% { filter: drop-shadow(0 0 20px rgba(0, 240, 255, 0.5)); }
-            50% { filter: drop-shadow(0 0 30px rgba(0, 240, 255, 0.8)); }
+
+            0%,
+            100% {
+                filter: drop-shadow(0 0 20px rgba(0, 240, 255, 0.5));
+            }
+
+            50% {
+                filter: drop-shadow(0 0 30px rgba(0, 240, 255, 0.8));
+            }
         }
-        
+
         /* Buttons */
         .btn-neon {
             position: relative;
@@ -144,7 +171,7 @@
             overflow: hidden;
             transition: all 0.3s ease;
         }
-        
+
         .btn-neon::before {
             content: '';
             position: absolute;
@@ -155,44 +182,44 @@
             background: linear-gradient(90deg, transparent, var(--neon-blue), transparent);
             transition: left 0.5s ease;
         }
-        
+
         .btn-neon:hover::before {
             left: 100%;
         }
-        
+
         .btn-neon:hover {
             background: var(--neon-blue);
             color: var(--dark-bg);
-            box-shadow: 
+            box-shadow:
                 0 0 20px var(--neon-blue),
                 0 0 40px var(--neon-blue),
                 inset 0 0 20px rgba(255, 255, 255, 0.3);
         }
-        
+
         .btn-purple {
             border-color: var(--neon-purple);
             color: var(--neon-purple);
         }
-        
+
         .btn-purple:hover {
             background: var(--neon-purple);
-            box-shadow: 
+            box-shadow:
                 0 0 20px var(--neon-purple),
                 0 0 40px var(--neon-purple);
         }
-        
+
         .btn-pink {
             border-color: var(--neon-pink);
             color: var(--neon-pink);
         }
-        
+
         .btn-pink:hover {
             background: var(--neon-pink);
-            box-shadow: 
+            box-shadow:
                 0 0 20px var(--neon-pink),
                 0 0 40px var(--neon-pink);
         }
-        
+
         /* Input Fields */
         .input-cyber {
             background: rgba(20, 24, 36, 0.5);
@@ -203,19 +230,19 @@
             font-size: 16px;
             transition: all 0.3s ease;
         }
-        
+
         .input-cyber:focus {
             outline: none;
             border-color: var(--neon-blue);
-            box-shadow: 
+            box-shadow:
                 0 0 20px rgba(0, 240, 255, 0.3),
                 inset 0 0 10px rgba(0, 240, 255, 0.1);
         }
-        
+
         .input-cyber::placeholder {
             color: rgba(255, 255, 255, 0.3);
         }
-        
+
         /* Sidebar Menu */
         .sidebar {
             position: relative;
@@ -223,7 +250,7 @@
             height: 100vh;
             overflow-y: auto;
         }
-        
+
         .menu-item {
             position: relative;
             font-family: 'Rajdhani', sans-serif;
@@ -237,25 +264,25 @@
             transition: all 0.3s ease;
             border-left: 3px solid transparent;
         }
-        
+
         .menu-item:hover {
             background: rgba(0, 240, 255, 0.1);
             border-left-color: var(--neon-blue);
             transform: translateX(5px);
         }
-        
+
         .menu-item.active {
             background: rgba(0, 240, 255, 0.2);
             border-left-color: var(--neon-blue);
             box-shadow: inset 0 0 20px rgba(0, 240, 255, 0.2);
         }
-        
+
         .menu-icon {
             font-size: 24px;
             margin-right: 12px;
             filter: drop-shadow(0 0 5px currentColor);
         }
-        
+
         /* Content Area */
         .content-wrapper {
             position: relative;
@@ -264,49 +291,62 @@
             height: 100vh;
             overflow-y: auto;
         }
-        
+
         .section-content {
             display: none;
             animation: fadeInUp 0.5s ease-out;
         }
-        
+
         .section-content.active {
             display: block;
         }
-        
+
         @keyframes fadeInUp {
             from {
                 opacity: 0;
                 transform: translateY(30px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
             }
         }
-        
+
         /* Card Animations */
         .card {
             animation: slideIn 0.6s ease-out;
             animation-fill-mode: both;
         }
-        
-        .card:nth-child(1) { animation-delay: 0.1s; }
-        .card:nth-child(2) { animation-delay: 0.2s; }
-        .card:nth-child(3) { animation-delay: 0.3s; }
-        .card:nth-child(4) { animation-delay: 0.4s; }
-        
+
+        .card:nth-child(1) {
+            animation-delay: 0.1s;
+        }
+
+        .card:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .card:nth-child(3) {
+            animation-delay: 0.3s;
+        }
+
+        .card:nth-child(4) {
+            animation-delay: 0.4s;
+        }
+
         @keyframes slideIn {
             from {
                 opacity: 0;
                 transform: translateX(-30px);
             }
+
             to {
                 opacity: 1;
                 transform: translateX(0);
             }
         }
-        
+
         /* Toast Notifications */
         .toast {
             position: fixed;
@@ -320,30 +360,31 @@
             font-size: 16px;
             animation: toastSlide 0.5s ease-out;
         }
-        
+
         @keyframes toastSlide {
             from {
                 transform: translateX(400px);
                 opacity: 0;
             }
+
             to {
                 transform: translateX(0);
                 opacity: 1;
             }
         }
-        
+
         .toast-success {
             background: linear-gradient(135deg, rgba(0, 240, 255, 0.9), rgba(0, 200, 255, 0.9));
             border: 1px solid var(--neon-blue);
             box-shadow: 0 0 30px rgba(0, 240, 255, 0.5);
         }
-        
+
         .toast-error {
             background: linear-gradient(135deg, rgba(255, 0, 170, 0.9), rgba(200, 0, 150, 0.9));
             border: 1px solid var(--neon-pink);
             box-shadow: 0 0 30px rgba(255, 0, 170, 0.5);
         }
-        
+
         /* Section Headers */
         .section-header {
             font-family: 'Orbitron', sans-serif;
@@ -357,7 +398,7 @@
             position: relative;
             display: inline-block;
         }
-        
+
         .section-header::after {
             content: '';
             position: absolute;
@@ -368,7 +409,7 @@
             background: linear-gradient(90deg, var(--neon-blue), transparent);
             box-shadow: 0 0 10px var(--neon-blue);
         }
-        
+
         /* Subsection Headers */
         .subsection-header {
             font-family: 'Orbitron', sans-serif;
@@ -379,7 +420,7 @@
             text-transform: uppercase;
             letter-spacing: 2px;
         }
-        
+
         /* Results Display */
         .result-display {
             background: rgba(0, 20, 40, 0.5);
@@ -394,7 +435,7 @@
             white-space: pre-wrap;
             word-break: break-all;
         }
-        
+
         /* Debug Console */
         .debug-console {
             background: rgba(10, 14, 26, 0.95);
@@ -404,7 +445,7 @@
             max-height: 300px;
             overflow-y: auto;
         }
-        
+
         .debug-entry {
             background: rgba(20, 24, 36, 0.8);
             border-left: 3px solid var(--neon-purple);
@@ -415,28 +456,29 @@
             font-size: 12px;
             animation: debugFadeIn 0.3s ease-out;
         }
-        
+
         @keyframes debugFadeIn {
             from {
                 opacity: 0;
                 transform: translateY(-10px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
             }
         }
-        
+
         .debug-title {
             color: var(--neon-purple);
             font-weight: bold;
             margin-bottom: 5px;
         }
-        
+
         .debug-content {
             color: #00ff88;
         }
-        
+
         /* Token Display */
         .token-display {
             background: rgba(0, 240, 255, 0.1);
@@ -449,26 +491,26 @@
             word-break: break-all;
             margin-bottom: 15px;
         }
-        
+
         /* Scrollbar Styling */
         ::-webkit-scrollbar {
             width: 8px;
             height: 8px;
         }
-        
+
         ::-webkit-scrollbar-track {
             background: rgba(10, 14, 26, 0.5);
         }
-        
+
         ::-webkit-scrollbar-thumb {
             background: linear-gradient(180deg, var(--neon-blue), var(--neon-purple));
             border-radius: 4px;
         }
-        
+
         ::-webkit-scrollbar-thumb:hover {
             background: var(--neon-blue);
         }
-        
+
         /* Loading Animation */
         .loading {
             display: inline-block;
@@ -479,20 +521,22 @@
             border-radius: 50%;
             animation: spin 0.8s linear infinite;
         }
-        
+
         @keyframes spin {
-            to { transform: rotate(360deg); }
+            to {
+                transform: rotate(360deg);
+            }
         }
-        
+
         /* Hover Effects */
         .hover-glow {
             transition: all 0.3s ease;
         }
-        
+
         .hover-glow:hover {
             filter: drop-shadow(0 0 15px currentColor);
         }
-        
+
         /* Grid Layout */
         .grid-layout {
             display: grid;
@@ -500,21 +544,21 @@
             gap: 24px;
             margin-bottom: 30px;
         }
-        
+
         /* File Upload Styling */
         .filepond--root {
             font-family: 'Rajdhani', sans-serif;
         }
-        
+
         .filepond--panel-root {
             background: rgba(20, 24, 36, 0.5);
             border: 2px dashed rgba(0, 240, 255, 0.4);
         }
-        
+
         .filepond--drop-label {
             color: var(--neon-blue);
         }
-        
+
         /* Select Dropdown */
         .select-cyber {
             background: rgba(20, 24, 36, 0.5);
@@ -526,18 +570,18 @@
             cursor: pointer;
             transition: all 0.3s ease;
         }
-        
+
         .select-cyber:focus {
             outline: none;
             border-color: var(--neon-blue);
             box-shadow: 0 0 20px rgba(0, 240, 255, 0.3);
         }
-        
+
         .select-cyber option {
             background: var(--dark-surface);
             color: #fff;
         }
-        
+
         /* Status Indicators */
         .status-indicator {
             display: inline-block;
@@ -547,22 +591,29 @@
             margin-right: 8px;
             animation: pulse 2s ease-in-out infinite;
         }
-        
+
         .status-connected {
             background: #00ff88;
             box-shadow: 0 0 10px #00ff88;
         }
-        
+
         .status-disconnected {
             background: var(--neon-pink);
             box-shadow: 0 0 10px var(--neon-pink);
         }
-        
+
         @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
         }
-        
+
         /* Link Styling */
         a {
             color: var(--neon-blue);
@@ -570,12 +621,12 @@
             transition: all 0.3s ease;
             position: relative;
         }
-        
+
         a:hover {
             color: var(--neon-purple);
             text-shadow: 0 0 10px currentColor;
         }
-        
+
         a::after {
             content: '';
             position: absolute;
@@ -586,12 +637,13 @@
             background: var(--neon-blue);
             transition: width 0.3s ease;
         }
-        
+
         a:hover::after {
             width: 100%;
         }
     </style>
 </head>
+
 <body>
     <div class="bg-animated"></div>
     <div class="grid-overlay"></div>
@@ -631,7 +683,7 @@
         }
 
         function updateTokenDisplay() {
-            document.getElementById('token-display').textContent = 
+            document.getElementById('token-display').textContent =
                 accessToken ? `TOKEN: ${accessToken.substring(0, 30)}...` : 'NO TOKEN SET';
         }
 
@@ -717,7 +769,7 @@
             const formData = new URLSearchParams();
             formData.append('username', username);
             formData.append('password', password);
-            
+
             const data = await handleResponse(
                 axios.post(`${API_BASE}/auth/login`, formData, {
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
@@ -741,7 +793,7 @@
             const fileInput = document.getElementById('file-upload');
             const formData = new FormData();
             formData.append('file', fileInput.files[0]);
-            
+
             const data = await handleResponse(
                 axios.post(`${API_BASE}/files/`, formData, { headers: authHeaders() }),
                 'File uploaded'
@@ -755,7 +807,7 @@
                 headers: authHeaders(),
                 responseType: 'blob'
             });
-            
+
             const url = window.URL.createObjectURL(new Blob([response.data]));
             const link = document.createElement('a');
             link.href = url;
@@ -813,7 +865,7 @@
             const formData = new FormData();
             formData.append('file', fileInput.files[0]);
             multipartJSONField(formData, 'conversion', { target_format: targetFormat });
-            
+
             const data = await handleResponse(
                 axios.post(`${API_BASE}/convert/`, formData, { headers: authHeaders() }),
                 'File converted'
@@ -840,7 +892,7 @@
             const rotate = parseInt(document.getElementById('photo-rotate').value);
             const formData = new FormData();
             formData.append('file', fileInput.files[0]);
-            
+
             const operations = { filter, rotate };
             const cropX = document.getElementById('crop-x').value;
             if (cropX) {
@@ -851,9 +903,9 @@
                     h: parseInt(document.getElementById('crop-h').value)
                 };
             }
-            
+
             multipartJSONField(formData, 'operations', operations);
-            
+
             const data = await handleResponse(
                 axios.post(`${API_BASE}/photo/edit`, formData, { headers: authHeaders() }),
                 'Photo edited'
@@ -880,7 +932,7 @@
             Array.from(fileInput.files).forEach(file => {
                 formData.append('files', file);
             });
-            
+
             const data = await handleResponse(
                 axios.post(`${API_BASE}/pdf/merge`, formData, { headers: authHeaders() }),
                 'PDFs merged'
@@ -892,7 +944,7 @@
             const fileInput = document.getElementById('pdf-convert-file');
             const formData = new FormData();
             formData.append('file', fileInput.files[0]);
-            
+
             const data = await handleResponse(
                 axios.post(`${API_BASE}/pdf/convert`, formData, { headers: authHeaders() }),
                 'Converted to PDF'
@@ -903,12 +955,12 @@
         async function generateQR() {
             const text = document.getElementById('qr-text').value;
             const size = parseInt(document.getElementById('qr-size').value);
-            
+
             const data = await handleResponse(
                 axios.post(`${API_BASE}/qrcode/generate`, { text, size }, { headers: authHeaders() }),
                 'QR code generated'
             );
-            
+
             const url = normalizeObjectUrl(data.url);
             document.getElementById('qr-result').innerHTML = `
                 <div class="glass p-6 rounded-lg text-center">
@@ -921,39 +973,70 @@
         }
 
         let pollInterval;
+        let pollCount = 0;
+        const MAX_POLLS = 30; // Max 60 seconds (30 * 2s)
+
         async function summarizeFile() {
             const fileInput = document.getElementById('summarize-file');
             const formData = new FormData();
             formData.append('file', fileInput.files[0]);
-            
+
             const data = await handleResponse(
                 axios.post(`${API_BASE}/summarize/`, formData, { headers: authHeaders() }),
                 'Summarization queued'
             );
-            
+
+            pollCount = 0;
             document.getElementById('summarize-result').innerHTML = `
                 <div class="glass p-6 rounded-lg">
                     <p class="mb-2"><span class="text-neon-purple">JOB ID:</span> ${data.job_id}</p>
-                    <p class="mb-4"><span class="text-neon-purple">STATUS:</span> ${data.status}</p>
+                    <p class="mb-4"><span class="text-neon-purple">STATUS:</span> <span id="job-status">${data.status}</span></p>
                     <div class="loading"></div> <span class="ml-2">Polling for results...</span>
                 </div>
             `;
-            
+
             pollInterval = setInterval(async () => {
                 try {
+                    pollCount++;
                     const jobData = await axios.get(`${API_BASE}/summarize/jobs/${data.job_id}`, { headers: authHeaders() });
                     logDebug('Job Status', jobData.data);
-                    
+
+                    // Update status display
+                    const statusEl = document.getElementById('job-status');
+                    if (statusEl) statusEl.textContent = jobData.data.status;
+
                     if (jobData.data.status === 'completed') {
                         clearInterval(pollInterval);
                         const url = normalizeObjectUrl(jobData.data.result_url);
                         document.getElementById('summarize-result').innerHTML = `
                             <div class="glass p-6 rounded-lg">
+                                <p class="mb-2"><span class="text-neon-purple">JOB ID:</span> ${data.job_id}</p>
                                 <p class="mb-4"><span class="text-neon-purple">STATUS:</span> ✓ COMPLETED</p>
-                                <a href="${url}" target="_blank" class="hover-glow">↓ DOWNLOAD SUMMARY</a>
+                                <a href="${url}" target="_blank" class="btn-neon block text-center rounded py-3">📥 DOWNLOAD SUMMARY</a>
                             </div>
                         `;
                         showToast('Summarization completed');
+                    } else if (jobData.data.status === 'failed') {
+                        clearInterval(pollInterval);
+                        document.getElementById('summarize-result').innerHTML = `
+                            <div class="glass p-6 rounded-lg">
+                                <p class="mb-2"><span class="text-neon-purple">JOB ID:</span> ${data.job_id}</p>
+                                <p class="mb-4"><span class="text-neon-purple">STATUS:</span> ❌ FAILED</p>
+                                <p class="text-red-400">${jobData.data.error || 'Unknown error'}</p>
+                            </div>
+                        `;
+                        showToast('Summarization failed', 'error');
+                    } else if (pollCount >= MAX_POLLS) {
+                        clearInterval(pollInterval);
+                        document.getElementById('summarize-result').innerHTML = `
+                            <div class="glass p-6 rounded-lg">
+                                <p class="mb-2"><span class="text-neon-purple">JOB ID:</span> ${data.job_id}</p>
+                                <p class="mb-4"><span class="text-neon-purple">STATUS:</span> ⏳ PROCESSING</p>
+                                <p class="text-gray-400">Job is still processing. Check back later or refresh the page.</p>
+                                <button onclick="checkJobStatus('${data.job_id}')" class="btn-neon mt-4 rounded py-2 px-4">🔄 CHECK STATUS</button>
+                            </div>
+                        `;
+                        showToast('Job still processing', 'warning');
                     }
                 } catch (err) {
                     clearInterval(pollInterval);
@@ -962,25 +1045,63 @@
             }, 2000);
         }
 
+        async function checkJobStatus(jobId) {
+            try {
+                const jobData = await axios.get(`${API_BASE}/summarize/jobs/${jobId}`, { headers: authHeaders() });
+                if (jobData.data.status === 'completed') {
+                    const url = normalizeObjectUrl(jobData.data.result_url);
+                    document.getElementById('summarize-result').innerHTML = `
+                        <div class="glass p-6 rounded-lg">
+                            <p class="mb-2"><span class="text-neon-purple">JOB ID:</span> ${jobId}</p>
+                            <p class="mb-4"><span class="text-neon-purple">STATUS:</span> ✓ COMPLETED</p>
+                            <a href="${url}" target="_blank" class="btn-neon block text-center rounded py-3">📥 DOWNLOAD SUMMARY</a>
+                        </div>
+                    `;
+                    showToast('Summary ready!');
+                } else {
+                    showToast(`Status: ${jobData.data.status}`);
+                }
+            } catch (err) {
+                handleError(err);
+            }
+        }
+
         async function createARMenu() {
             const fileInput = document.getElementById('ar-menu-file');
             const formData = new FormData();
             formData.append('file', fileInput.files[0]);
-            
+
             const data = await handleResponse(
                 axios.post(`${API_BASE}/ar/menu/create`, formData, { headers: authHeaders() }),
                 'AR Menu created'
             );
-            
+
             const previewUrl = normalizeObjectUrl(data.preview_url);
             const menuUrl = normalizeObjectUrl(data.menu_url);
+            const arViewerUrl = data.ar_viewer_url ? `${window.location.origin}${data.ar_viewer_url}` : null;
+
             document.getElementById('ar-result').innerHTML = `
                 <div class="glass p-6 rounded-lg">
                     <p class="mb-2"><span class="text-neon-blue">MENU ID:</span> ${data.ar_menu_id}</p>
                     <p class="mb-2"><span class="text-neon-blue">ITEMS:</span> ${data.item_count}</p>
                     <p class="mb-4"><span class="text-neon-blue">QR CODES:</span> ${data.qr_count}</p>
-                    <a href="${previewUrl}" target="_blank" class="hover-glow block mb-2">👁 PREVIEW</a>
-                    <a href="${menuUrl}" target="_blank" class="hover-glow">🔗 MENU URL</a>
+                    <div class="grid gap-3">
+                        <a href="${previewUrl}" target="_blank" class="btn-neon text-center rounded py-2 block">👁 VIEW PREVIEW</a>
+                        <a href="${menuUrl}" target="_blank" class="btn-neon text-center rounded py-2 block">📋 MENU DATA</a>
+                        ${arViewerUrl ? `<a href="${arViewerUrl}" target="_blank" class="btn-neon text-center rounded py-2 block" style="background: linear-gradient(135deg, #b000ff, #00f0ff);">🥽 LAUNCH AR EXPERIENCE</a>` : ''}
+                    </div>
+                    ${data.ar_data ? `
+                    <div class="mt-4">
+                        <h4 class="text-neon-purple mb-2">AR QR Codes:</h4>
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
+                            ${data.ar_data.qr_codes.slice(0, 6).map(qr => `
+                                <a href="${normalizeObjectUrl(qr.qr_url)}" target="_blank" class="glass p-2 rounded text-center text-sm hover-glow">
+                                    📱 ${data.ar_data.items.find(i => i.id === qr.item_id)?.name || 'Item'}
+                                </a>
+                            `).join('')}
+                        </div>
+                    </div>
+                    ` : ''}
                 </div>
             `;
         }
@@ -990,12 +1111,12 @@
             const fileInput = document.getElementById('analysis-file');
             const formData = new FormData();
             formData.append('file', fileInput.files[0]);
-            
+
             const data = await handleResponse(
                 axios.post(`${API_BASE}/analysis/upload`, formData, { headers: authHeaders() }),
                 'Analysis completed'
             );
-            
+
             document.getElementById('analysis-result').innerHTML = `
                 <div class="glass p-6 rounded-lg">
                     <p class="mb-4"><span class="text-neon-purple">ANALYSIS ID:</span> ${data.analysis_id}</p>
@@ -1020,7 +1141,7 @@
                     </div>
                 </div>
             `;
-            
+
             renderAnalysisCharts(data);
         }
 
@@ -1172,22 +1293,24 @@
         }
 
         let ws;
+        let wsConnected = false;
         function connectWebSocket() {
-            const url = USE_WS_AUTH_QUERY 
+            const url = USE_WS_AUTH_QUERY
                 ? `${WS_BASE}?token=${accessToken}`
                 : WS_BASE;
-            
+
             ws = new WebSocket(url);
-            
+
             ws.onopen = () => {
+                wsConnected = true;
                 showToast('WebSocket connected');
                 document.getElementById('ws-status').innerHTML = '<span class="status-indicator status-connected"></span>CONNECTED';
             };
-            
+
             ws.onmessage = (event) => {
                 const data = JSON.parse(event.data);
                 logDebug('WebSocket Message', data);
-                
+
                 const notif = document.createElement('div');
                 notif.className = 'glass p-4 rounded-lg mb-3';
                 notif.style.animation = 'slideIn 0.5s ease-out';
@@ -1197,14 +1320,21 @@
                 `;
                 document.getElementById('ws-notifications').insertBefore(notif, document.getElementById('ws-notifications').firstChild);
             };
-            
+
             ws.onerror = (error) => {
-                showToast('WebSocket error', 'error');
+                if (!wsConnected) {
+                    showToast('WebSocket connection failed', 'error');
+                } else {
+                    showToast('WebSocket error', 'error');
+                }
                 logDebug('WebSocket Error', error);
             };
-            
+
             ws.onclose = () => {
-                showToast('WebSocket disconnected', 'error');
+                if (wsConnected) {
+                    showToast('WebSocket disconnected', 'error');
+                }
+                wsConnected = false;
                 document.getElementById('ws-status').innerHTML = '<span class="status-indicator status-disconnected"></span>DISCONNECTED';
             };
         }
@@ -1213,23 +1343,24 @@
             if (ws) {
                 ws.close();
                 ws = null;
+                wsConnected = false;
             }
         }
 
         window.onload = () => {
             updateTokenDisplay();
             switchSection('auth-section');
-            
+
             document.getElementById('fill-register').onclick = () => {
                 document.getElementById('reg-email').value = 'test@example.com';
                 document.getElementById('reg-password').value = 'password123';
             };
-            
+
             document.getElementById('fill-login').onclick = () => {
                 document.getElementById('login-email').value = 'test@example.com';
                 document.getElementById('login-password').value = 'password123';
             };
-            
+
             document.getElementById('fill-qr').onclick = () => {
                 document.getElementById('qr-text').value = 'https://example.com';
                 document.getElementById('qr-size').value = '256';
@@ -1242,10 +1373,11 @@
         <div class="sidebar glass" style="width: 280px; border-right: 2px solid rgba(0, 240, 255, 0.3);">
             <div style="padding: 30px 20px;">
                 <h1 class="title-glow mb-8">NEURAL API</h1>
-                
+
                 <div class="token-display" id="token-display"></div>
-                <button onclick="clearTokens()" class="btn-neon btn-pink w-full mb-8" style="font-size: 12px; padding: 10px;">RESET TOKENS</button>
-                
+                <button onclick="clearTokens()" class="btn-neon btn-pink w-full mb-8"
+                    style="font-size: 12px; padding: 10px;">RESET TOKENS</button>
+
                 <nav>
                     <div class="menu-item active" onclick="switchSection('auth-section')" data-section="auth-section">
                         <span class="menu-icon">🔐</span> AUTH
@@ -1265,7 +1397,8 @@
                     <div class="menu-item" onclick="switchSection('qr-section')" data-section="qr-section">
                         <span class="menu-icon">📱</span> QR CODE
                     </div>
-                    <div class="menu-item" onclick="switchSection('summarize-section')" data-section="summarize-section">
+                    <div class="menu-item" onclick="switchSection('summarize-section')"
+                        data-section="summarize-section">
                         <span class="menu-icon">📝</span> SUMMARIZE
                     </div>
                     <div class="menu-item" onclick="switchSection('ar-section')" data-section="ar-section">
@@ -1286,31 +1419,38 @@
             <!-- Auth Section -->
             <div id="auth-section" class="section-content active">
                 <h2 class="section-header">AUTHENTICATION</h2>
-                
+
                 <div class="grid-layout">
                     <div class="card glass rounded-lg p-6">
                         <h3 class="subsection-header">REGISTER</h3>
-                        <input id="reg-email" type="email" placeholder="Email Address" class="input-cyber w-full rounded mb-3">
-                        <input id="reg-password" type="password" placeholder="Password" class="input-cyber w-full rounded mb-4">
+                        <input id="reg-email" type="email" placeholder="Email Address"
+                            class="input-cyber w-full rounded mb-3">
+                        <input id="reg-password" type="password" placeholder="Password"
+                            class="input-cyber w-full rounded mb-4">
                         <button onclick="register()" class="btn-neon w-full rounded">REGISTER</button>
-                        <button id="fill-register" class="btn-neon btn-purple w-full rounded mt-3" style="font-size: 11px; padding: 8px;">FILL EXAMPLE</button>
+                        <button id="fill-register" class="btn-neon btn-purple w-full rounded mt-3"
+                            style="font-size: 11px; padding: 8px;">FILL EXAMPLE</button>
                     </div>
-                    
+
                     <div class="card glass rounded-lg p-6">
                         <h3 class="subsection-header">LOGIN</h3>
-                        <input id="login-email" type="email" placeholder="Email Address" class="input-cyber w-full rounded mb-3">
-                        <input id="login-password" type="password" placeholder="Password" class="input-cyber w-full rounded mb-4">
+                        <input id="login-email" type="email" placeholder="Email Address"
+                            class="input-cyber w-full rounded mb-3">
+                        <input id="login-password" type="password" placeholder="Password"
+                            class="input-cyber w-full rounded mb-4">
                         <button onclick="login()" class="btn-neon w-full rounded">LOGIN</button>
-                        <button id="fill-login" class="btn-neon btn-purple w-full rounded mt-3" style="font-size: 11px; padding: 8px;">FILL EXAMPLE</button>
+                        <button id="fill-login" class="btn-neon btn-purple w-full rounded mt-3"
+                            style="font-size: 11px; padding: 8px;">FILL EXAMPLE</button>
                     </div>
-                    
+
                     <div class="card glass rounded-lg p-6">
                         <h3 class="subsection-header">REFRESH TOKEN</h3>
-                        <p class="text-gray-400 mb-4" style="font-size: 14px;">Refresh your authentication token to maintain session.</p>
+                        <p class="text-gray-400 mb-4" style="font-size: 14px;">Refresh your authentication token to
+                            maintain session.</p>
                         <button onclick="refresh()" class="btn-neon btn-purple w-full rounded">REFRESH</button>
                     </div>
                 </div>
-                
+
                 <div class="glass rounded-lg p-6 mt-6">
                     <h3 class="subsection-header">RESPONSE</h3>
                     <pre id="auth-result" class="result-display"></pre>
@@ -1320,40 +1460,45 @@
             <!-- Files Section -->
             <div id="files-section" class="section-content">
                 <h2 class="section-header">FILE MANAGEMENT</h2>
-                
+
                 <div class="grid-layout">
                     <div class="card glass rounded-lg p-6">
                         <h3 class="subsection-header">UPLOAD</h3>
                         <input id="file-upload" type="file" class="input-cyber w-full rounded mb-4">
                         <button onclick="uploadFile()" class="btn-neon w-full rounded">UPLOAD FILE</button>
                     </div>
-                    
+
                     <div class="card glass rounded-lg p-6">
                         <h3 class="subsection-header">DOWNLOAD</h3>
-                        <input id="file-id-get" type="number" placeholder="File ID" class="input-cyber w-full rounded mb-4">
+                        <input id="file-id-get" type="number" placeholder="File ID"
+                            class="input-cyber w-full rounded mb-4">
                         <button onclick="getFile()" class="btn-neon w-full rounded">GET FILE</button>
                     </div>
-                    
+
                     <div class="card glass rounded-lg p-6">
                         <h3 class="subsection-header">DELETE</h3>
-                        <input id="file-id-delete" type="number" placeholder="File ID" class="input-cyber w-full rounded mb-4">
+                        <input id="file-id-delete" type="number" placeholder="File ID"
+                            class="input-cyber w-full rounded mb-4">
                         <button onclick="deleteFile()" class="btn-neon btn-pink w-full rounded">DELETE FILE</button>
                     </div>
-                    
+
                     <div class="card glass rounded-lg p-6">
                         <h3 class="subsection-header">RENAME</h3>
-                        <input id="file-id-rename" type="number" placeholder="File ID" class="input-cyber w-full rounded mb-3">
-                        <input id="file-new-name" type="text" placeholder="New Filename" class="input-cyber w-full rounded mb-4">
+                        <input id="file-id-rename" type="number" placeholder="File ID"
+                            class="input-cyber w-full rounded mb-3">
+                        <input id="file-new-name" type="text" placeholder="New Filename"
+                            class="input-cyber w-full rounded mb-4">
                         <button onclick="renameFile()" class="btn-neon btn-purple w-full rounded">RENAME FILE</button>
                     </div>
-                    
+
                     <div class="card glass rounded-lg p-6">
                         <h3 class="subsection-header">VERSIONS</h3>
-                        <input id="file-id-versions" type="number" placeholder="File ID" class="input-cyber w-full rounded mb-4">
+                        <input id="file-id-versions" type="number" placeholder="File ID"
+                            class="input-cyber w-full rounded mb-4">
                         <button onclick="getVersions()" class="btn-neon w-full rounded">GET VERSIONS</button>
                     </div>
                 </div>
-                
+
                 <div class="glass rounded-lg p-6 mt-6">
                     <h3 class="subsection-header">RESPONSE</h3>
                     <div id="files-result" class="result-display"></div>
@@ -1363,7 +1508,7 @@
             <!-- Convert Section -->
             <div id="convert-section" class="section-content">
                 <h2 class="section-header">FILE CONVERSION</h2>
-                
+
                 <div class="card glass rounded-lg p-6">
                     <h3 class="subsection-header">CONVERT FILE</h3>
                     <input id="convert-file" type="file" class="input-cyber w-full rounded mb-4">
@@ -1376,7 +1521,7 @@
                     </select>
                     <button onclick="convertFile()" class="btn-neon w-full rounded">CONVERT</button>
                 </div>
-                
+
                 <div class="glass rounded-lg p-6 mt-6">
                     <h3 class="subsection-header">RESPONSE</h3>
                     <div id="convert-result"></div>
@@ -1386,11 +1531,11 @@
             <!-- Photo Section -->
             <div id="photo-section" class="section-content">
                 <h2 class="section-header">PHOTO EDITING</h2>
-                
+
                 <div class="card glass rounded-lg p-6">
                     <h3 class="subsection-header">EDIT PHOTO</h3>
                     <input id="photo-file" type="file" accept="image/*" class="input-cyber w-full rounded mb-4">
-                    
+
                     <label class="block text-sm mb-2" style="color: var(--neon-pink)">FILTER:</label>
                     <select id="photo-filter" class="select-cyber w-full rounded mb-4">
                         <option value="">None</option>
@@ -1398,10 +1543,10 @@
                         <option value="sepia">Sepia</option>
                         <option value="blur">Blur</option>
                     </select>
-                    
+
                     <label class="block text-sm mb-2" style="color: var(--neon-pink)">ROTATE (degrees):</label>
                     <input id="photo-rotate" type="number" value="0" class="input-cyber w-full rounded mb-4">
-                    
+
                     <label class="block text-sm mb-2" style="color: var(--neon-pink)">CROP (optional):</label>
                     <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;" class="mb-4">
                         <input id="crop-x" type="number" placeholder="X" class="input-cyber rounded">
@@ -1409,10 +1554,10 @@
                         <input id="crop-w" type="number" placeholder="W" class="input-cyber rounded">
                         <input id="crop-h" type="number" placeholder="H" class="input-cyber rounded">
                     </div>
-                    
+
                     <button onclick="editPhoto()" class="btn-neon btn-pink w-full rounded">EDIT PHOTO</button>
                 </div>
-                
+
                 <div class="glass rounded-lg p-6 mt-6">
                     <h3 class="subsection-header">RESPONSE</h3>
                     <div id="photo-result"></div>
@@ -1422,21 +1567,22 @@
             <!-- PDF Section -->
             <div id="pdf-section" class="section-content">
                 <h2 class="section-header">PDF OPERATIONS</h2>
-                
+
                 <div class="grid-layout">
                     <div class="card glass rounded-lg p-6">
                         <h3 class="subsection-header">MERGE PDFs</h3>
-                        <input id="pdf-merge-files" type="file" accept=".pdf" multiple class="input-cyber w-full rounded mb-4">
+                        <input id="pdf-merge-files" type="file" accept=".pdf" multiple
+                            class="input-cyber w-full rounded mb-4">
                         <button onclick="mergePDF()" class="btn-neon w-full rounded">MERGE</button>
                     </div>
-                    
+
                     <div class="card glass rounded-lg p-6">
                         <h3 class="subsection-header">CONVERT TO PDF</h3>
                         <input id="pdf-convert-file" type="file" class="input-cyber w-full rounded mb-4">
                         <button onclick="convertToPDF()" class="btn-neon btn-purple w-full rounded">CONVERT</button>
                     </div>
                 </div>
-                
+
                 <div class="glass rounded-lg p-6 mt-6">
                     <h3 class="subsection-header">RESPONSE</h3>
                     <pre id="pdf-result" class="result-display"></pre>
@@ -1446,15 +1592,17 @@
             <!-- QR Section -->
             <div id="qr-section" class="section-content">
                 <h2 class="section-header">QR CODE GENERATOR</h2>
-                
+
                 <div class="card glass rounded-lg p-6">
                     <h3 class="subsection-header">GENERATE QR CODE</h3>
                     <input id="qr-text" type="text" placeholder="Text or URL" class="input-cyber w-full rounded mb-3">
-                    <input id="qr-size" type="number" placeholder="Size (px)" value="256" class="input-cyber w-full rounded mb-4">
+                    <input id="qr-size" type="number" placeholder="Size (px)" value="256"
+                        class="input-cyber w-full rounded mb-4">
                     <button onclick="generateQR()" class="btn-neon w-full rounded mb-3">GENERATE</button>
-                    <button id="fill-qr" class="btn-neon btn-purple w-full rounded" style="font-size: 11px; padding: 8px;">FILL EXAMPLE</button>
+                    <button id="fill-qr" class="btn-neon btn-purple w-full rounded"
+                        style="font-size: 11px; padding: 8px;">FILL EXAMPLE</button>
                 </div>
-                
+
                 <div class="glass rounded-lg p-6 mt-6">
                     <h3 class="subsection-header">RESPONSE</h3>
                     <div id="qr-result"></div>
@@ -1464,13 +1612,13 @@
             <!-- Summarize Section -->
             <div id="summarize-section" class="section-content">
                 <h2 class="section-header">TEXT SUMMARIZATION</h2>
-                
+
                 <div class="card glass rounded-lg p-6">
                     <h3 class="subsection-header">UPLOAD TEXT FILE</h3>
                     <input id="summarize-file" type="file" accept=".txt,.md" class="input-cyber w-full rounded mb-4">
                     <button onclick="summarizeFile()" class="btn-neon btn-purple w-full rounded">SUMMARIZE</button>
                 </div>
-                
+
                 <div class="glass rounded-lg p-6 mt-6">
                     <h3 class="subsection-header">RESPONSE</h3>
                     <div id="summarize-result"></div>
@@ -1480,14 +1628,15 @@
             <!-- AR Section -->
             <div id="ar-section" class="section-content">
                 <h2 class="section-header">AR MENU CREATOR</h2>
-                
+
                 <div class="card glass rounded-lg p-6">
                     <h3 class="subsection-header">UPLOAD MENU DATA</h3>
-                    <p class="text-gray-400 mb-4" style="font-size: 14px;">Upload CSV or JSON file containing menu items</p>
+                    <p class="text-gray-400 mb-4" style="font-size: 14px;">Upload CSV or JSON file containing menu items
+                    </p>
                     <input id="ar-menu-file" type="file" accept=".csv,.json" class="input-cyber w-full rounded mb-4">
                     <button onclick="createARMenu()" class="btn-neon w-full rounded">CREATE AR MENU</button>
                 </div>
-                
+
                 <div class="glass rounded-lg p-6 mt-6">
                     <h3 class="subsection-header">RESPONSE</h3>
                     <div id="ar-result"></div>
@@ -1497,14 +1646,14 @@
             <!-- Analysis Section -->
             <div id="analysis-section" class="section-content">
                 <h2 class="section-header">DATA ANALYSIS</h2>
-                
+
                 <div class="card glass rounded-lg p-6">
                     <h3 class="subsection-header">UPLOAD DATA FILE</h3>
                     <p class="text-gray-400 mb-4" style="font-size: 14px;">Upload CSV or XLSX file for analysis</p>
                     <input id="analysis-file" type="file" accept=".csv,.xlsx" class="input-cyber w-full rounded mb-4">
                     <button onclick="uploadAnalysis()" class="btn-neon btn-purple w-full rounded">ANALYZE</button>
                 </div>
-                
+
                 <div class="glass rounded-lg p-6 mt-6">
                     <h3 class="subsection-header">RESPONSE</h3>
                     <div id="analysis-result"></div>
@@ -1514,16 +1663,17 @@
             <!-- WebSocket Section -->
             <div id="ws-section" class="section-content">
                 <h2 class="section-header">WEBSOCKET NOTIFICATIONS</h2>
-                
+
                 <div class="card glass rounded-lg p-6 mb-6">
                     <h3 class="subsection-header">CONNECTION</h3>
-                    <p class="mb-4" id="ws-status"><span class="status-indicator status-disconnected"></span>DISCONNECTED</p>
+                    <p class="mb-4" id="ws-status"><span
+                            class="status-indicator status-disconnected"></span>DISCONNECTED</p>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                         <button onclick="connectWebSocket()" class="btn-neon rounded">CONNECT</button>
                         <button onclick="disconnectWebSocket()" class="btn-neon btn-pink rounded">DISCONNECT</button>
                     </div>
                 </div>
-                
+
                 <div class="glass rounded-lg p-6">
                     <h3 class="subsection-header">NOTIFICATIONS</h3>
                     <div id="ws-notifications" style="max-height: 500px; overflow-y: auto;"></div>
@@ -1534,11 +1684,13 @@
             <div class="glass rounded-lg p-6 mt-8">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                     <h3 class="subsection-header" style="margin: 0;">DEBUG CONSOLE</h3>
-                    <button onclick="document.getElementById('debug-console').innerHTML=''" class="btn-neon btn-pink rounded" style="font-size: 11px; padding: 8px 16px;">CLEAR</button>
+                    <button onclick="document.getElementById('debug-console').innerHTML=''"
+                        class="btn-neon btn-pink rounded" style="font-size: 11px; padding: 8px 16px;">CLEAR</button>
                 </div>
                 <div id="debug-console" class="debug-console"></div>
             </div>
         </div>
     </div>
 </body>
+
 </html>

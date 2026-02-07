@@ -1,17 +1,21 @@
 from celery_app import app
 from app.services.summarization_service import summarization_service
 from app.services.minio_service import minio_service
+from app.models.job import Job, JobStatus
+from app.core.config import settings
 import uuid
-from sqlalchemy.ext.asyncio import AsyncSession
-from app.core.database import engine
-from app.models.job import Job
-from sqlalchemy import select
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session
 
-@app.task(bind=True)
+# Sync engine for Celery tasks (asyncpg doesn't work in sync context)
+sync_db_url = settings.DATABASE_URL.replace("+asyncpg", "")
+sync_engine = create_engine(sync_db_url)
+
+@app.task(bind=True, max_retries=3)
 def process_summarization(self, job_id: str, text: str, user_id: int):
     """Background summarization task."""
     try:
-        # Update job status
+        # Generate summary
         summary = summarization_service.extractive_summary(text)
         
         # Save summary to MinIO
@@ -20,43 +24,27 @@ def process_summarization(self, job_id: str, text: str, user_id: int):
         object_name = minio_service.upload_file(
             filename=filename,
             file_content=summary_bytes,
-            metadata={'type': 'summarization_result'}
+            metadata={'type': 'summarization_result', 'job_id': job_id}
         )
         result_url = minio_service.get_presigned_url(object_name)
         
-        # Update job in DB
-        async def update_job():
-            async with AsyncSession(engine) as db:
-                job = await db.get(Job, job_id)
-                if job:
-                    job.status = JobStatus.COMPLETED
-                    job.result_url = result_url
-                    await db.commit()
+        # Update job in DB using sync session
+        with Session(sync_engine) as db:
+            job = db.get(Job, job_id)
+            if job:
+                job.status = JobStatus.COMPLETED
+                job.result_url = result_url
+                db.commit()
         
-        import asyncio
-        asyncio.run(update_job())
-        
-        # Send Kafka notification
-        from kafka import KafkaProducer
-        producer = KafkaProducer(bootstrap_servers=['localhost:9092'])
-        producer.send('job.completed', {
-            'job_id': job_id,
-            'user_id': user_id,
-            'status': 'completed'
-        })
-        
-        return result_url
+        return {"job_id": job_id, "result_url": result_url, "status": "completed"}
         
     except Exception as exc:
         # Update job as failed
-        async def mark_failed():
-            async with AsyncSession(engine) as db:
-                job = await db.get(Job, job_id)
-                if job:
-                    job.status = JobStatus.FAILED
-                    job.error_message = str(exc)
-                    await db.commit()
+        with Session(sync_engine) as db:
+            job = db.get(Job, job_id)
+            if job:
+                job.status = JobStatus.FAILED
+                job.error_message = str(exc)
+                db.commit()
         
-        import asyncio
-        asyncio.run(mark_failed())
-        raise self.retry(exc=exc)
+        raise self.retry(exc=exc, countdown=5)
