@@ -87,6 +87,22 @@ async def ar_viewer(menu_id: str):
     Serve an AR viewer page using AR.js and A-Frame.
     This creates an immersive AR experience where users can view menu items in 3D.
     """
+    # Fetch actual menu data from MinIO
+    menu_filename = f"ar-menu-{menu_id}.json"
+    object_name = minio_service.find_object_by_suffix(menu_filename)
+    
+    menu_items_json = "[]"
+    if object_name:
+        menu_bytes = minio_service.download_file(object_name)
+        if menu_bytes:
+            try:
+                menu_data = json.loads(menu_bytes.decode('utf-8'))
+                # Extract items and format for JavaScript
+                items = menu_data.get('items', [])
+                menu_items_json = json.dumps(items)
+            except (json.JSONDecodeError, UnicodeDecodeError):
+                pass
+    
     html_content = f'''<!DOCTYPE html>
 <html>
 <head>
@@ -97,6 +113,40 @@ async def ar_viewer(menu_id: str):
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
     <style>
         body {{ margin: 0; overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }}
+        .fallback-bg {{
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(135deg, #0a0e1a 0%, #1a1f35 50%, #0a0e1a 100%);
+            z-index: -1;
+        }}
+        .fallback-bg::before {{
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image: 
+                radial-gradient(circle at 20% 30%, rgba(0, 240, 255, 0.1) 0%, transparent 40%),
+                radial-gradient(circle at 80% 70%, rgba(176, 0, 255, 0.1) 0%, transparent 40%);
+            animation: bgPulse 8s ease-in-out infinite;
+        }}
+        @keyframes bgPulse {{
+            0%, 100% {{ opacity: 0.8; }}
+            50% {{ opacity: 1; }}
+        }}
+        .no-camera-notice {{
+            position: fixed;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 165, 0, 0.2);
+            border: 1px solid #ffa500;
+            padding: 10px 20px;
+            border-radius: 10px;
+            color: #ffa500;
+            font-size: 0.85rem;
+            z-index: 1001;
+            display: none;
+        }}
+        .no-camera-notice.visible {{ display: block; }}
         .ar-overlay {{
             position: fixed;
             top: 0;
@@ -202,7 +252,7 @@ async def ar_viewer(menu_id: str):
     </div>
 
     <div class="ar-controls">
-        <button class="ar-btn" onclick="showDemoItem()">🎲 Demo Item</button>
+        <button class="ar-btn" onclick="showMenuItem()">🎲 Next Item</button>
         <button class="ar-btn" onclick="toggleCamera()">📷 Switch Camera</button>
         <button class="ar-btn" onclick="captureAR()">📸 Capture</button>
     </div>
@@ -278,14 +328,11 @@ async def ar_viewer(menu_id: str):
         let menuData = null;
         let currentItemIndex = 0;
         
-        // Demo menu items (would be loaded from API in production)
-        const demoItems = [
-            {{ name: "Gourmet Burger", price: 15.99, description: "Premium beef patty with artisan toppings" }},
-            {{ name: "Truffle Pasta", price: 24.99, description: "Fresh pasta with black truffle cream sauce" }},
-            {{ name: "Sushi Platter", price: 32.99, description: "Chef's selection of premium sushi" }},
-            {{ name: "Caesar Salad", price: 12.99, description: "Crisp romaine with house-made dressing" }},
-            {{ name: "Chocolate Lava Cake", price: 9.99, description: "Warm chocolate cake with molten center" }}
-        ];
+        // Menu items loaded from backend
+        const menuItems = {menu_items_json};
+        
+        // Use actual menu items if available
+        const displayItems = menuItems.length > 0 ? menuItems : [];
         
         // Hide loading screen when scene is ready
         document.querySelector('a-scene').addEventListener('loaded', function() {{
@@ -294,14 +341,28 @@ async def ar_viewer(menu_id: str):
             }}, 1500);
         }});
         
-        function showDemoItem() {{
-            const item = demoItems[currentItemIndex];
-            currentItemIndex = (currentItemIndex + 1) % demoItems.length;
+        function showMenuItem() {{
+            if (displayItems.length === 0) {{
+                document.getElementById('itemName').textContent = 'No menu items';
+                document.getElementById('itemPrice').textContent = '';
+                document.getElementById('itemDesc').textContent = 'Upload a menu to see items here';
+                document.getElementById('menuCard').classList.add('active');
+                return;
+            }}
             
-            document.getElementById('itemName').textContent = item.name;
-            document.getElementById('itemPrice').textContent = '$' + item.price.toFixed(2);
-            document.getElementById('itemDesc').textContent = item.description;
+            const item = displayItems[currentItemIndex];
+            currentItemIndex = (currentItemIndex + 1) % displayItems.length;
+            
+            document.getElementById('itemName').textContent = item.name || 'Menu Item';
+            document.getElementById('itemPrice').textContent = item.price ? '$' + parseFloat(item.price).toFixed(2) : '';
+            document.getElementById('itemDesc').textContent = item.description || '';
             document.getElementById('menuCard').classList.add('active');
+            
+            // Update price tag in 3D scene
+            const priceTag = document.querySelector('#arContent a-entity[text]');
+            if (priceTag && item.price) {{
+                priceTag.setAttribute('text', 'value: $' + parseFloat(item.price).toFixed(2) + '; align: center; width: 2; color: #00f0ff;');
+            }}
             
             // Animate 3D content
             const arContent = document.getElementById('arContent');
@@ -332,8 +393,13 @@ async def ar_viewer(menu_id: str):
         
         // Listen for marker detection
         document.addEventListener('markerFound', function(e) {{
-            showDemoItem();
+            showMenuItem();
         }});
+        
+        // Show first item on load if available
+        if (displayItems.length > 0) {{
+            setTimeout(() => showMenuItem(), 2000);
+        }}
     </script>
 </body>
 </html>'''

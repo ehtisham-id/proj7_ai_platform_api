@@ -652,7 +652,8 @@
         // ============================================
         // CONFIGURATION
         // ============================================
-        const API_BASE = "http://localhost:8000/api/v1";
+        const BACKEND_URL = "http://localhost:8000";
+        const API_BASE = `${BACKEND_URL}/api/v1`;
         const WS_BASE = "ws://localhost:8000/ws/notifications";
         const USE_WS_AUTH_QUERY = true;
 
@@ -1078,7 +1079,7 @@
 
             const previewUrl = normalizeObjectUrl(data.preview_url);
             const menuUrl = normalizeObjectUrl(data.menu_url);
-            const arViewerUrl = data.ar_viewer_url ? `${window.location.origin}${data.ar_viewer_url}` : null;
+            const arViewerUrl = data.ar_viewer_url ? `${BACKEND_URL}${data.ar_viewer_url}` : null;
 
             document.getElementById('ar-result').innerHTML = `
                 <div class="glass p-6 rounded-lg">

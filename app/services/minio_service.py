@@ -59,6 +59,17 @@ class MinIOService:
     def delete_file(self, object_name: str):
         self.client.remove_object(self.bucket, object_name)
     
+    def find_object_by_suffix(self, suffix: str) -> Optional[str]:
+        """Find an object name that ends with the given suffix."""
+        try:
+            objects = self.client.list_objects(self.bucket, recursive=True)
+            for obj in objects:
+                if obj.object_name.endswith(suffix):
+                    return obj.object_name
+        except S3Error:
+            pass
+        return None
+    
     def get_presigned_url(self, object_name: str, expires: int = 3600) -> str:
         # MinIO expects a timedelta for expires; accept int seconds for convenience.
         exp = timedelta(seconds=expires) if isinstance(expires, int) else expires
