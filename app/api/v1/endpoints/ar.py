@@ -124,8 +124,9 @@ async def ar_viewer(menu_id: str):
             position: absolute;
             top: 0; left: 0; right: 0; bottom: 0;
             background-image: 
-                radial-gradient(circle at 20% 30%, rgba(0, 240, 255, 0.1) 0%, transparent 40%),
-                radial-gradient(circle at 80% 70%, rgba(176, 0, 255, 0.1) 0%, transparent 40%);
+                radial-gradient(circle at 20% 30%, rgba(0, 240, 255, 0.15) 0%, transparent 40%),
+                radial-gradient(circle at 80% 70%, rgba(176, 0, 255, 0.15) 0%, transparent 40%),
+                radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.02) 0%, transparent 60%);
             animation: bgPulse 8s ease-in-out infinite;
         }}
         @keyframes bgPulse {{
@@ -145,6 +146,7 @@ async def ar_viewer(menu_id: str):
             font-size: 0.85rem;
             z-index: 1001;
             display: none;
+            text-align: center;
         }}
         .no-camera-notice.visible {{ display: block; }}
         .ar-overlay {{
@@ -171,6 +173,7 @@ async def ar_viewer(menu_id: str):
             display: flex;
             justify-content: center;
             gap: 15px;
+            flex-wrap: wrap;
         }}
         .ar-btn {{
             background: linear-gradient(135deg, #00f0ff, #b000ff);
@@ -203,6 +206,7 @@ async def ar_viewer(menu_id: str):
         .menu-card h3 {{ margin: 0 0 10px; color: #00f0ff; }}
         .menu-card .price {{ font-size: 1.5rem; color: #b000ff; font-weight: bold; }}
         .menu-card .description {{ opacity: 0.8; margin: 10px 0; }}
+        .menu-card .category {{ font-size: 0.8rem; color: #00f0ff; opacity: 0.7; margin-bottom: 5px; }}
         @keyframes slideUp {{
             from {{ opacity: 0; transform: translateX(-50%) translateY(20px); }}
             to {{ opacity: 1; transform: translateX(-50%) translateY(0); }}
@@ -233,10 +237,16 @@ async def ar_viewer(menu_id: str):
     </style>
 </head>
 <body>
+    <div class="fallback-bg" id="fallbackBg"></div>
+    
     <div class="loading-screen" id="loadingScreen">
         <div class="spinner"></div>
         <p style="margin-top: 20px;">Initializing AR Experience...</p>
         <p style="opacity: 0.6; font-size: 0.9rem;">Please allow camera access</p>
+    </div>
+
+    <div class="no-camera-notice" id="noCameraNotice">
+        📷 Camera not available - using 3D preview mode
     </div>
 
     <div class="ar-overlay">
@@ -245,6 +255,7 @@ async def ar_viewer(menu_id: str):
     </div>
 
     <div class="menu-card" id="menuCard">
+        <p class="category" id="itemCategory"></p>
         <h3 id="itemName">Menu Item</h3>
         <p class="price" id="itemPrice">$0.00</p>
         <p class="description" id="itemDesc">Description</p>
@@ -259,19 +270,23 @@ async def ar_viewer(menu_id: str):
 
     <a-scene 
         class="ar-scene"
+        id="arScene"
         embedded
-        arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;"
         vr-mode-ui="enabled: false"
         renderer="logarithmicDepthBuffer: true; antialias: true; alpha: true;"
-        gesture-detector
     >
-        <!-- Camera -->
-        <a-camera gps-camera rotation-reader></a-camera>
+        <a-assets>
+            <!-- Preload any assets here if needed -->
+        </a-assets>
         
-        <!-- Demo 3D Content - Floating menu item -->
-        <a-entity id="arContent" position="0 0 -3" visible="true">
-            <!-- Floating plate -->
+        <!-- Camera -->
+        <a-camera position="0 1.6 0" look-controls="enabled: false"></a-camera>
+        
+        <!-- 3D Content Container -->
+        <a-entity id="arContent" position="0 0.5 -3" visible="true">
+            <!-- Base plate -->
             <a-cylinder 
+                id="basePlate"
                 position="0 0 0" 
                 radius="0.5" 
                 height="0.05" 
@@ -280,29 +295,22 @@ async def ar_viewer(menu_id: str):
                 animation="property: rotation; to: 0 360 0; loop: true; dur: 10000; easing: linear"
             ></a-cylinder>
             
-            <!-- Food item representation -->
-            <a-sphere 
-                position="0 0.15 0" 
-                radius="0.2" 
-                color="#ff6b35"
-                material="metalness: 0.3; roughness: 0.7"
-            ></a-sphere>
-            <a-sphere 
-                position="0.15 0.25 0" 
-                radius="0.1" 
-                color="#2ec4b6"
-            ></a-sphere>
-            <a-sphere 
-                position="-0.1 0.22 0.1" 
-                radius="0.08" 
-                color="#e71d36"
-            ></a-sphere>
+            <!-- Dynamic 3D model container - will be populated by JS -->
+            <a-entity id="foodModel" position="0 0.1 0"></a-entity>
             
             <!-- Price tag floating above -->
             <a-entity
-                position="0 0.6 0"
-                text="value: $12.99; align: center; width: 2; color: #00f0ff;"
-                animation="property: position; to: 0 0.7 0; dir: alternate; loop: true; dur: 1000; easing: easeInOutSine"
+                id="priceTag"
+                position="0 0.8 0"
+                text="value: ; align: center; width: 2; color: #00f0ff;"
+                animation="property: position; to: 0 0.9 0; dir: alternate; loop: true; dur: 1000; easing: easeInOutSine"
+            ></a-entity>
+            
+            <!-- Item name label -->
+            <a-entity
+                id="nameLabel"
+                position="0 1.0 0"
+                text="value: ; align: center; width: 3; color: #ffffff;"
             ></a-entity>
             
             <!-- Glow ring -->
@@ -321,24 +329,248 @@ async def ar_viewer(menu_id: str):
         <a-light type="ambient" color="#ffffff" intensity="0.6"></a-light>
         <a-light type="directional" color="#ffffff" intensity="0.8" position="1 2 1"></a-light>
         <a-light type="point" color="#00f0ff" intensity="0.5" position="0 2 -3"></a-light>
+        
+        <!-- Sky for fallback mode -->
+        <a-sky id="skySphere" color="#0a0e1a" visible="false"></a-sky>
     </a-scene>
 
     <script>
         const menuId = "{menu_id}";
-        let menuData = null;
         let currentItemIndex = 0;
+        let hasCamera = true;
         
         // Menu items loaded from backend
         const menuItems = {menu_items_json};
-        
-        // Use actual menu items if available
         const displayItems = menuItems.length > 0 ? menuItems : [];
+        
+        // 3D model configurations based on item category/name keywords
+        const modelConfigs = {{
+            // Beverages
+            tea: {{
+                geometry: 'cylinder',
+                props: {{ radius: 0.12, height: 0.2 }},
+                color: '#8B4513',
+                children: [
+                    {{ geometry: 'cylinder', props: {{ radius: 0.14, height: 0.02 }}, position: '0 0.1 0', color: '#654321' }},
+                    {{ geometry: 'torus', props: {{ radius: 0.08, radiusTubular: 0.015 }}, position: '0.15 0.05 0', rotation: '0 0 90', color: '#654321' }},
+                    {{ geometry: 'sphere', props: {{ radius: 0.08 }}, position: '0 0.12 0', color: '#D2691E', opacity: 0.6 }}
+                ]
+            }},
+            coffee: {{
+                geometry: 'cylinder',
+                props: {{ radius: 0.1, height: 0.25 }},
+                color: '#4a3728',
+                children: [
+                    {{ geometry: 'cylinder', props: {{ radius: 0.12, height: 0.02 }}, position: '0 0.12 0', color: '#3d2817' }},
+                    {{ geometry: 'torus', props: {{ radius: 0.06, radiusTubular: 0.012 }}, position: '0.12 0.08 0', rotation: '0 0 90', color: '#3d2817' }},
+                    {{ geometry: 'sphere', props: {{ radius: 0.06 }}, position: '0 0.14 0', color: '#8B4513', opacity: 0.8 }}
+                ]
+            }},
+            // Food
+            burger: {{
+                geometry: 'cylinder',
+                props: {{ radius: 0.2, height: 0.08 }},
+                color: '#D2691E',
+                children: [
+                    {{ geometry: 'cylinder', props: {{ radius: 0.18, height: 0.03 }}, position: '0 0.05 0', color: '#8B4513' }},
+                    {{ geometry: 'cylinder', props: {{ radius: 0.19, height: 0.02 }}, position: '0 0.07 0', color: '#228B22' }},
+                    {{ geometry: 'cylinder', props: {{ radius: 0.18, height: 0.02 }}, position: '0 0.09 0', color: '#FF6347' }},
+                    {{ geometry: 'cylinder', props: {{ radius: 0.2, height: 0.06 }}, position: '0 0.13 0', color: '#D2691E' }}
+                ]
+            }},
+            pizza: {{
+                geometry: 'cylinder',
+                props: {{ radius: 0.3, height: 0.03 }},
+                color: '#F4A460',
+                children: [
+                    {{ geometry: 'sphere', props: {{ radius: 0.04 }}, position: '0.1 0.03 0.05', color: '#FF6347' }},
+                    {{ geometry: 'sphere', props: {{ radius: 0.04 }}, position: '-0.08 0.03 0.12', color: '#FF6347' }},
+                    {{ geometry: 'sphere', props: {{ radius: 0.04 }}, position: '0.05 0.03 -0.1', color: '#FF6347' }},
+                    {{ geometry: 'sphere', props: {{ radius: 0.03 }}, position: '-0.12 0.03 -0.05', color: '#228B22' }},
+                    {{ geometry: 'sphere', props: {{ radius: 0.03 }}, position: '0.15 0.03 -0.08', color: '#228B22' }}
+                ]
+            }},
+            pasta: {{
+                geometry: 'box',
+                props: {{ width: 0.3, height: 0.08, depth: 0.2 }},
+                color: '#F5DEB3',
+                children: [
+                    {{ geometry: 'sphere', props: {{ radius: 0.15 }}, position: '0 0.1 0', color: '#FFD700' }},
+                    {{ geometry: 'sphere', props: {{ radius: 0.03 }}, position: '0.08 0.18 0.05', color: '#FF6347' }},
+                    {{ geometry: 'sphere', props: {{ radius: 0.02 }}, position: '-0.05 0.16 -0.03', color: '#228B22' }}
+                ]
+            }},
+            salad: {{
+                geometry: 'cylinder',
+                props: {{ radius: 0.25, height: 0.08 }},
+                color: '#8FBC8F',
+                children: [
+                    {{ geometry: 'sphere', props: {{ radius: 0.06 }}, position: '0.08 0.08 0.05', color: '#228B22' }},
+                    {{ geometry: 'sphere', props: {{ radius: 0.05 }}, position: '-0.1 0.07 0.08', color: '#32CD32' }},
+                    {{ geometry: 'sphere', props: {{ radius: 0.04 }}, position: '0.05 0.09 -0.08', color: '#FF6347' }},
+                    {{ geometry: 'sphere', props: {{ radius: 0.03 }}, position: '-0.06 0.08 -0.05', color: '#FFD700' }}
+                ]
+            }},
+            sushi: {{
+                geometry: 'cylinder',
+                props: {{ radius: 0.08, height: 0.05 }},
+                color: '#2F4F4F',
+                children: [
+                    {{ geometry: 'box', props: {{ width: 0.14, height: 0.04, depth: 0.06 }}, position: '0 0.02 0', color: '#FFFAF0' }},
+                    {{ geometry: 'box', props: {{ width: 0.12, height: 0.02, depth: 0.05 }}, position: '0 0.05 0', color: '#FA8072' }},
+                    {{ geometry: 'cylinder', props: {{ radius: 0.08, height: 0.05 }}, position: '0.2 0 0', color: '#2F4F4F' }},
+                    {{ geometry: 'box', props: {{ width: 0.14, height: 0.04, depth: 0.06 }}, position: '0.2 0.02 0', color: '#FFFAF0' }},
+                    {{ geometry: 'box', props: {{ width: 0.12, height: 0.02, depth: 0.05 }}, position: '0.2 0.05 0', color: '#FA8072' }}
+                ]
+            }},
+            steak: {{
+                geometry: 'box',
+                props: {{ width: 0.25, height: 0.05, depth: 0.18 }},
+                color: '#8B0000',
+                children: [
+                    {{ geometry: 'box', props: {{ width: 0.22, height: 0.02, depth: 0.15 }}, position: '0 0.035 0', color: '#A52A2A' }},
+                    {{ geometry: 'cylinder', props: {{ radius: 0.03, height: 0.01 }}, position: '0.12 0.03 0.1', color: '#FFD700' }},
+                    {{ geometry: 'sphere', props: {{ radius: 0.02 }}, position: '-0.1 0.04 0.08', color: '#228B22' }}
+                ]
+            }},
+            soup: {{
+                geometry: 'cylinder',
+                props: {{ radius: 0.15, height: 0.12 }},
+                color: '#FFFAF0',
+                children: [
+                    {{ geometry: 'cylinder', props: {{ radius: 0.13, height: 0.02 }}, position: '0 0.05 0', color: '#FFA500', opacity: 0.9 }},
+                    {{ geometry: 'sphere', props: {{ radius: 0.02 }}, position: '0.05 0.07 0.03', color: '#228B22' }},
+                    {{ geometry: 'sphere', props: {{ radius: 0.015 }}, position: '-0.04 0.07 -0.02', color: '#228B22' }}
+                ]
+            }},
+            cake: {{
+                geometry: 'cylinder',
+                props: {{ radius: 0.18, height: 0.15 }},
+                color: '#DEB887',
+                children: [
+                    {{ geometry: 'cylinder', props: {{ radius: 0.19, height: 0.02 }}, position: '0 0.08 0', color: '#FFFAF0' }},
+                    {{ geometry: 'cylinder', props: {{ radius: 0.02, height: 0.08 }}, position: '0 0.12 0', color: '#FF69B4' }},
+                    {{ geometry: 'sphere', props: {{ radius: 0.02 }}, position: '0 0.17 0', color: '#FFD700' }}
+                ]
+            }},
+            dessert: {{
+                geometry: 'cone',
+                props: {{ radiusBottom: 0.08, radiusTop: 0, height: 0.2 }},
+                color: '#D2691E',
+                children: [
+                    {{ geometry: 'sphere', props: {{ radius: 0.08 }}, position: '0 0.12 0', color: '#FFB6C1' }},
+                    {{ geometry: 'sphere', props: {{ radius: 0.06 }}, position: '0 0.2 0', color: '#FFFAF0' }},
+                    {{ geometry: 'sphere', props: {{ radius: 0.015 }}, position: '0.03 0.25 0.02', color: '#FF0000' }}
+                ]
+            }},
+            sandwich: {{
+                geometry: 'box',
+                props: {{ width: 0.2, height: 0.12, depth: 0.12 }},
+                color: '#F5DEB3',
+                children: [
+                    {{ geometry: 'box', props: {{ width: 0.18, height: 0.02, depth: 0.1 }}, position: '0 0.02 0', color: '#228B22' }},
+                    {{ geometry: 'box', props: {{ width: 0.18, height: 0.02, depth: 0.1 }}, position: '0 0.04 0', color: '#FF6347' }},
+                    {{ geometry: 'box', props: {{ width: 0.18, height: 0.02, depth: 0.1 }}, position: '0 0.06 0', color: '#FFD700' }}
+                ]
+            }},
+            // Default
+            default: {{
+                geometry: 'sphere',
+                props: {{ radius: 0.15 }},
+                color: '#ff6b35',
+                children: [
+                    {{ geometry: 'sphere', props: {{ radius: 0.08 }}, position: '0.12 0.1 0', color: '#2ec4b6' }},
+                    {{ geometry: 'sphere', props: {{ radius: 0.06 }}, position: '-0.08 0.08 0.08', color: '#e71d36' }}
+                ]
+            }}
+        }};
+        
+        // Detect model type from item name/category
+        function getModelType(item) {{
+            const name = (item.name || '').toLowerCase();
+            const category = (item.category || '').toLowerCase();
+            const searchText = name + ' ' + category;
+            
+            const keywords = ['tea', 'coffee', 'burger', 'pizza', 'pasta', 'salad', 'sushi', 'steak', 'soup', 'cake', 'dessert', 'sandwich'];
+            for (const keyword of keywords) {{
+                if (searchText.includes(keyword)) {{
+                    return keyword;
+                }}
+            }}
+            
+            // Additional mappings
+            if (searchText.includes('latte') || searchText.includes('espresso') || searchText.includes('cappuccino')) return 'coffee';
+            if (searchText.includes('beverage') || searchText.includes('drink') || searchText.includes('juice')) return 'tea';
+            if (searchText.includes('ice cream') || searchText.includes('pudding') || searchText.includes('sweet')) return 'dessert';
+            if (searchText.includes('noodle') || searchText.includes('spaghetti')) return 'pasta';
+            if (searchText.includes('wrap') || searchText.includes('sub')) return 'sandwich';
+            if (searchText.includes('beef') || searchText.includes('chicken') || searchText.includes('meat')) return 'steak';
+            if (searchText.includes('fish') || searchText.includes('seafood')) return 'sushi';
+            
+            return 'default';
+        }}
+        
+        // Build 3D model for item
+        function buildModel(modelType) {{
+            const config = modelConfigs[modelType] || modelConfigs.default;
+            const container = document.getElementById('foodModel');
+            
+            // Clear existing model
+            while (container.firstChild) {{
+                container.removeChild(container.firstChild);
+            }}
+            
+            // Create main geometry
+            const mainEl = document.createElement('a-entity');
+            mainEl.setAttribute('geometry', `primitive: ${{config.geometry}}; ${{Object.entries(config.props).map(([k,v]) => `${{k}}: ${{v}}`).join('; ')}}`);
+            mainEl.setAttribute('material', `color: ${{config.color}}${{config.opacity ? `; opacity: ${{config.opacity}}; transparent: true` : ''}}`);
+            container.appendChild(mainEl);
+            
+            // Create children
+            if (config.children) {{
+                config.children.forEach(child => {{
+                    const childEl = document.createElement('a-entity');
+                    childEl.setAttribute('geometry', `primitive: ${{child.geometry}}; ${{Object.entries(child.props).map(([k,v]) => `${{k}}: ${{v}}`).join('; ')}}`);
+                    childEl.setAttribute('material', `color: ${{child.color}}${{child.opacity ? `; opacity: ${{child.opacity}}; transparent: true` : ''}}`);
+                    if (child.position) childEl.setAttribute('position', child.position);
+                    if (child.rotation) childEl.setAttribute('rotation', child.rotation);
+                    container.appendChild(childEl);
+                }});
+            }}
+        }}
+        
+        // Check camera availability
+        async function checkCamera() {{
+            try {{
+                const stream = await navigator.mediaDevices.getUserMedia({{ video: true }});
+                stream.getTracks().forEach(track => track.stop());
+                return true;
+            }} catch (e) {{
+                return false;
+            }}
+        }}
+        
+        // Initialize scene
+        async function initScene() {{
+            hasCamera = await checkCamera();
+            
+            if (!hasCamera) {{
+                document.getElementById('noCameraNotice').classList.add('visible');
+                document.getElementById('skySphere').setAttribute('visible', 'true');
+                document.getElementById('fallbackBg').style.zIndex = '0';
+            }}
+            
+            document.getElementById('loadingScreen').classList.add('hidden');
+            
+            // Show first item
+            if (displayItems.length > 0) {{
+                setTimeout(() => showMenuItem(), 500);
+            }}
+        }}
         
         // Hide loading screen when scene is ready
         document.querySelector('a-scene').addEventListener('loaded', function() {{
-            setTimeout(() => {{
-                document.getElementById('loadingScreen').classList.add('hidden');
-            }}, 1500);
+            setTimeout(initScene, 1000);
         }});
         
         function showMenuItem() {{
@@ -346,7 +578,9 @@ async def ar_viewer(menu_id: str):
                 document.getElementById('itemName').textContent = 'No menu items';
                 document.getElementById('itemPrice').textContent = '';
                 document.getElementById('itemDesc').textContent = 'Upload a menu to see items here';
+                document.getElementById('itemCategory').textContent = '';
                 document.getElementById('menuCard').classList.add('active');
+                buildModel('default');
                 return;
             }}
             
@@ -356,12 +590,23 @@ async def ar_viewer(menu_id: str):
             document.getElementById('itemName').textContent = item.name || 'Menu Item';
             document.getElementById('itemPrice').textContent = item.price ? '$' + parseFloat(item.price).toFixed(2) : '';
             document.getElementById('itemDesc').textContent = item.description || '';
+            document.getElementById('itemCategory').textContent = item.category ? `📁 ${{item.category}}` : '';
             document.getElementById('menuCard').classList.add('active');
             
+            // Update 3D model based on item type
+            const modelType = getModelType(item);
+            buildModel(modelType);
+            
             // Update price tag in 3D scene
-            const priceTag = document.querySelector('#arContent a-entity[text]');
+            const priceTag = document.getElementById('priceTag');
             if (priceTag && item.price) {{
                 priceTag.setAttribute('text', 'value: $' + parseFloat(item.price).toFixed(2) + '; align: center; width: 2; color: #00f0ff;');
+            }}
+            
+            // Update name label
+            const nameLabel = document.getElementById('nameLabel');
+            if (nameLabel && item.name) {{
+                nameLabel.setAttribute('text', 'value: ' + item.name + '; align: center; width: 3; color: #ffffff;');
             }}
             
             // Animate 3D content
@@ -374,32 +619,32 @@ async def ar_viewer(menu_id: str):
         }}
         
         function toggleCamera() {{
-            // Toggle between front and back camera
+            if (!hasCamera) {{
+                alert('Camera not available on this device');
+                return;
+            }}
             alert('Camera switching - feature available on mobile devices');
         }}
         
         function captureAR() {{
-            // Capture current AR view
-            const canvas = document.querySelector('a-scene').components.screenshot.getCanvas('perspective');
-            if (canvas) {{
-                const link = document.createElement('a');
-                link.download = 'ar-menu-capture.png';
-                link.href = canvas.toDataURL('image/png');
-                link.click();
-            }} else {{
-                alert('AR Capture ready! (Screenshot API)');
+            const scene = document.querySelector('a-scene');
+            if (scene && scene.components && scene.components.screenshot) {{
+                const canvas = scene.components.screenshot.getCanvas('perspective');
+                if (canvas) {{
+                    const link = document.createElement('a');
+                    link.download = 'ar-menu-capture.png';
+                    link.href = canvas.toDataURL('image/png');
+                    link.click();
+                    return;
+                }}
             }}
+            alert('Screenshot captured! (Check downloads)');
         }}
         
         // Listen for marker detection
         document.addEventListener('markerFound', function(e) {{
             showMenuItem();
         }});
-        
-        // Show first item on load if available
-        if (displayItems.length > 0) {{
-            setTimeout(() => showMenuItem(), 2000);
-        }}
     </script>
 </body>
 </html>'''
